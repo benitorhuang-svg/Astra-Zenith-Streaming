@@ -1,0 +1,52 @@
+{
+  "refinement_objective": "Align ASTRA_ZENITH v2.1 implementation with High-Fidelity FUI Mockup (gemini_desktop_fullscreen_mockup_1774917283108.png)",
+  "precision_directives": {
+    "layout_geometry": {
+      "header_height": "80px",
+      "sidebar_left_width": "80px",
+      "panel_right_width": "420px",
+      "portal_transition_zone": "Seamless edge-to-edge junction between interaction portal and log stream",
+      "grid_gutter": "24px"
+    },
+    "visual_fidelity": {
+      "surface_material": {
+        "base_color": "hsla(220, 40%, 4%, 0.7)",
+        "blur_intensity": "32px",
+        "inner_bezel_glow": "inset 1px 1px 1px rgba(255, 255, 255, 0.08)",
+        "border_alpha": 0.12,
+        "border_radius": "0px"
+      },
+      "chroma_mapping": {
+        "primary": "#00F7FF",
+        "secondary": "#8A2BE2",
+        "accent": "#FF007A",
+        "background": "#010409",
+        "neutral_dim": "#8899A6"
+      },
+      "fx_overlay": {
+        "scanlines": "enabled (2px spacing, 0.05 opacity)",
+        "gradient_nebula": "Deep shifting radial glows in background layers"
+      }
+    },
+    "component_specifications": {
+      "agent_nodes": {
+        "shape": "Hexagonal Geometric",
+        "status_indication": "Glow ring intensity based on 'BUSY' or 'IDLE' state",
+        "active_marker": "Glow dot at 15-degree-offset from center"
+      },
+      "interaction_portal": {
+        "graph_style": "Curved Bezier connectors with particle flow",
+        "status_pills": "SUCCESS (Cyan), BUSY (Purple), IDLE (Dark Gray)",
+        "typography": "Space Grotesk (Main), JetBrains Mono (Tech Data)"
+      },
+      "telemetry_matrix": {
+        "widget_style": "Industrial data cards with ID-label (C-01 to C-06) in top-right",
+        "charts": "Low-poly area graphs with neon stroke-line and 0.15 fill-alpha"
+      },
+      "handoff_modal": {
+        "aesthetic": "Command Override Bezel",
+        "buttons": "Flat, sharp edges, High-contrast cyan/transparent ghost state"
+      }
+    }
+  }
+}

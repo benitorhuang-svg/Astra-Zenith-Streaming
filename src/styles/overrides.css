@@ -1,0 +1,8 @@
+/* ══════════════════════════════════════════════════════════════
+   OVERRIDES.CSS — Tactical Overrides
+   Rules that MUST beat Tailwind utility specificity.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Status bar positioning is now handled via inline styles 
+   in az_portal_table.ts to avoid @layer specificity conflicts.
+   This file is reserved for future override needs. */

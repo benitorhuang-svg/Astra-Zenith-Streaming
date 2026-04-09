@@ -1,0 +1,126 @@
+{
+  "project_metadata": {
+    "identity": "Gemini Multi-Agent Dashboard v2.1",
+    "version": "1.1.0",
+    "codename": "ASTRA_ZENITH",
+    "syns_id": "DELTA-0B",
+    "design_language": "FUI / Glassmorphism / Atomic",
+    "author_context": "Stitch MCP Optimized",
+    "accessibility_target": "WCAG 2.1 AA Compliant (High Contrast Mode support)"
+  },
+  "persona_aura_mapping": {
+    "A1_RESEARCHER": { "primary": "#00F7FF", "aurora_gradient": "linear-gradient(135deg, rgba(0, 247, 255, 0.2), transparent)", "glow_strength": "15px" },
+    "A2_ANALYZER": { "primary": "#8A2BE2", "aurora_gradient": "linear-gradient(135deg, rgba(138, 43, 226, 0.2), transparent)", "glow_strength": "18px" },
+    "A3_CODE_GEN": { "primary": "#00FFC3", "aurora_gradient": "linear-gradient(135deg, rgba(0, 255, 195, 0.2), transparent)", "glow_strength": "12px" },
+    "A4_REFINER": { "primary": "#FF007A", "aurora_gradient": "linear-gradient(135deg, rgba(255, 0, 122, 0.2), transparent)", "glow_strength": "14px" },
+    "A5_EVALUATOR": { "primary": "#FFD700", "aurora_gradient": "linear-gradient(135deg, rgba(255, 215, 0, 0.2), transparent)", "glow_strength": "10px" },
+    "DEFAULT_SYSTEM": { "primary": "#3498DB", "aurora_gradient": "linear-gradient(135deg, rgba(52, 152, 219, 0.1), transparent)", "glow_strength": "8px" }
+  },
+  "interaction_state_matrix": {
+    "idle": { "opacity": 0.8, "scale": 1, "brightness": 1, "border_alpha": 0.12 },
+    "hover": { "opacity": 1, "scale": 1.02, "brightness": 1.2, "border_alpha": 0.3, "shadow": "active_glow" },
+    "active": { "opacity": 1, "scale": 0.98, "brightness": 0.9, "border_alpha": 0.5, "inner_shadow": "inner_bezel" },
+    "focused": { "outline": "2px solid #00F7FF", "outline_offset": "4px", "shadow": "node_focus_halo" },
+    "disabled": { "opacity": 0.3, "grayscale": 1, "cursor": "not-allowed" },
+    "error_state": { "border": "1px solid #FF007A", "shadow": "critical_error_glow", "shake": "true" }
+  },
+  "visual_foundation": {
+    "colors_palette": {
+      "primary": { "hex": "#00F7FF", "name": "Atomic Cyan", "rgb": "0, 247, 255" },
+      "secondary": { "hex": "#8A2BE2", "name": "Neural Purple", "rgb": "138, 43, 226" },
+      "accent": { "hex": "#FF007A", "name": "Critical Magenta", "rgb": "255, 0, 122" },
+      "success": { "hex": "#00FFC3", "name": "Positive Green", "rgb": "0, 255, 195" },
+      "warning": { "hex": "#FFD700", "name": "Alert Gold", "rgb": "255, 215, 0" },
+      "background_base": { "hex": "#010409", "name": "Deep Midnight", "rgb": "1, 4, 9" },
+      "surface_glass": { "hex": "rgba(10, 15, 25, 0.7)", "name": "Obsidian Glass" },
+      "border_stroke": { "hex": "rgba(255, 255, 255, 0.12)", "name": "Subtle Fiber" },
+      "text_main": { "hex": "#FFFFFF", "opacity": 0.95 },
+      "text_dim": { "hex": "#8899A6", "opacity": 0.7 }
+    },
+    "typography_system": {
+      "display": { "font": "Outfit", "weight": "900", "letter_spacing": "-1.5px", "transform": "uppercase" },
+      "headings": { "font": "Outfit", "weight": "700", "letter_spacing": "0px" },
+      "body": { "font": "Outfit", "weight": "400", "line_height": "1.7" },
+      "mono": { "font": "JetBrains Mono", "weight": "500", "letter_spacing": "0px" },
+      "sizes": {
+        "h1": "3.2rem", "h2": "2rem", "h3": "1.3rem",
+        "body": "0.95rem", "small": "0.8rem", "tiny": "0.65rem"
+      }
+    },
+    "surface_effects": {
+      "blur_depth": "32px",
+      "corner_radius": { "large": "24px", "medium": "16px", "small": "8px", "pill": "60px" },
+      "box_shadows": {
+        "idle": "0 8px 32px 0 rgba(0, 0, 0, 0.5)",
+        "active_glow": "0 0 25px rgba(0, 247, 255, 0.35)",
+        "node_focus_halo": "0 0 40px rgba(0, 247, 255, 0.5)",
+        "inner_bezel": "inset 1.5px 1.5px 1.5px rgba(255, 255, 255, 0.12)",
+        "critical_error_glow": "0 0 30px rgba(255, 0, 122, 0.5)"
+      },
+      "z_index": { "bk_shader": -2, "bk_overlay": -1, "base": 1, "fixed_nav": 50, "overlay": 100, "modal": 500 }
+    }
+  },
+  "animation_engine": {
+    "timings": { "fast": "120ms", "normal": "280ms", "slow": "550ms", "vfx_loop": "12s", "shimmer": "2s" },
+    "curves": { "standard": "cubic-bezier(0.25, 0.1, 0.25, 1)", "bounce_out": "cubic-bezier(0.34, 1.56, 0.64, 1)", "entrance": "cubic-bezier(0, 0.55, 0.45, 1)" }
+  },
+  "layout_specification": {
+    "desktop_full_width": {
+      "sidebar_fixed": "240px",
+      "right_grid_fixed": "420px",
+      "portal_min_width": "800px",
+      "content_gap": "24px",
+      "scrollbar_width": "4px"
+    },
+    "header_height": "80px",
+    "footer_height": "48px"
+  },
+  "component_detailed_blueprint": {
+    "agent_sidebar": {
+      "node_dimension": "80px",
+      "node_vertical_gap": "32px",
+      "spine_stroke": "2px dashed rgba(0, 247, 255, 0.2)",
+      "spine_animation": "dash_flow 20s linear infinite"
+    },
+    "interaction_portal": {
+      "mermaid_theme": {
+        "primaryColor": "#00F7FF",
+        "nodeBorder": "1px solid rgba(255,255,255,0.2)",
+        "fontFamily": "JetBrains Mono"
+      },
+      "log_stream": {
+        "max_height": "calc(100vh - 128px - 180px)",
+        "message_spacing": "16px",
+        "avatar_size": "32px"
+      },
+      "input_bar": {
+        "max_width": "900px",
+        "padding": "0 24px",
+        "corner_vfx": "L-Bracket 8px"
+      }
+    },
+    "telemetry_matrix": {
+      "graph": {
+        "line_stroke": "2.5px",
+        "point_radius": "4px",
+        "grid_opacity": 0.05,
+        "gradient_fill_opacity": 0.15
+      },
+      "metrics": {
+        "hero_label_color": "#00F7FF",
+        "secondary_label_color": "#8899A6"
+      }
+    }
+  },
+  "vfx_spec": {
+    "shader_params": {
+      "noise_texture": "organic_perlin",
+      "wave_amplitude": 0.4,
+      "color_shift_speed": 0.5
+    },
+    "hitl_popup": {
+      "backdrop": "saturate(180%) blur(20px)",
+      "animation": "entrance scale 0.3s"
+    }
+  }
+}

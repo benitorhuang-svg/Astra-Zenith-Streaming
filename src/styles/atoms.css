@@ -1,0 +1,56 @@
+/* ══════════════════════════════════════════════════════════════
+   ATOMS.CSS — Pure Visual Primitives
+   .a-glass, .a-bracket, .a-status-dot
+   ══════════════════════════════════════════════════════════════ */
+
+/* 1. Industrial Glass */
+.a-glass {
+    background: var(--surface-glass);
+    backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--border-stroke);
+    box-shadow: var(--shadow-bezel), var(--shadow-soft), var(--inner-glow);
+    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    position: relative;
+}
+
+.a-glass--raised {
+    border-color: var(--border-rich);
+    box-shadow: var(--shadow-bezel), 0 12px 48px rgba(0, 0, 0, 0.3);
+}
+
+/* 2. Precision Brackets */
+.a-bracket {
+    position: absolute; width: 10px; height: 10px; border: 2px solid var(--primary);
+    pointer-events: none; z-index: 10; 
+    box-shadow: 0 0 12px var(--primary-glow);
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    opacity: 0.8;
+}
+.a-bracket--tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.a-bracket--tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+.a-bracket--bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+.a-bracket--br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+/* Interactive Bracket Expansion */
+[data-hover-brackets]:hover .a-bracket { transform: scale(1.15); opacity: 1; border-width: 2.5px; }
+
+/* 3. Status Indicators */
+@keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(2.2); opacity: 0; } }
+
+/* 4. Drag & Drop Primitives (Atomic: Atoms) */
+.u-drag-ghost { 
+    transition: transform 0.1s ease-out, opacity 0.2s; 
+    border-radius: 4px; 
+    pointer-events: none; 
+    z-index: 999999 !important;
+}
+
+@keyframes u-land-pulse {
+    0% { transform: scale(1.6); filter: brightness(3) contrast(2) drop-shadow(0 0 20px var(--primary)); opacity: 0.5; }
+    40% { transform: scale(0.85); filter: brightness(1.2); opacity: 1; }
+    70% { transform: scale(1.05); filter: brightness(1.1); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+.u-agent-landed { animation: u-land-pulse 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
+
+.a-img-contrast { filter: contrast(1.1) brightness(1.2); }

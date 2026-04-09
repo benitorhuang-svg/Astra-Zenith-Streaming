@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astra Zenith | Industrial Blueprint Dashboard</title>
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#00F7FF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="images/avatar_cute_robot.png">
+
+    <!-- External Dependencies -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Outfit:wght@300;600;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Core Tailwind CSS -->
+    <link rel="stylesheet" href="src/styles/input.css">
+</head>
+<body class="bg-bg text-text-main font-sans">
+
+    <!-- [FX LAYER] Industrial VFX Backdrop -->
+    <div class="g-backdrop">
+        <div class="g-backdrop__aurora"></div>
+        <div class="g-backdrop__dot-matrix"></div>
+        <div class="g-backdrop__scanlines"></div>
+        <div class="g-backdrop__noise"></div>
+    </div>
+
+    <!-- Main System Interface -->
+    <div class="relative w-full h-full flex flex-col overflow-hidden">
+        
+        <!-- [Organism] Global System Header -->
+        <az-header class="o-header"></az-header>
+
+        <main class="flex flex-1 overflow-hidden">
+            
+            <!-- [UNIFIED] Immersive Workspace (Full Width) -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <!-- [Organism] Seamless Command Portal -->
+                <az-portal class="flex-1 h-full"></az-portal>
+            </div>
+
+
+
+        </main>
+    </div>
+
+    <!-- Detail HUD Organism -->
+    <az-hud></az-hud>
+
+    <script type="module" src="src/scripts/blueprint_viewer.ts"></script>
+</body>
+</html>

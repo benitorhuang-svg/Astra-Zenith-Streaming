@@ -1,0 +1,81 @@
+/* ══════════════════════════════════════════════════════════════
+   PORTAL_COMPONENTS.CSS — Feature-Specific Styles
+   Styles extracted from az_portal*.ts inline templates.
+   ══════════════════════════════════════════════════════════════ */
+
+/* 1. Feature Molecules (Moved to molecules.css but kept specific utilities here) */
+.u-agent-pool-item.u-dragging { opacity: 0.5; filter: blur(1px); }
+
+/* 2. Seat Add Button */
+.u-seat-add { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.u-seat-add:hover { transform: scale(1.1); color: var(--primary); border-color: var(--primary); }
+
+/* 3. Table Center Core */
+.u-table-center-core { 
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.1); 
+    background: rgba(15, 23, 42, 0.2); 
+    border: 1px solid rgba(255,255,255,0.03); 
+    border-radius: 4px; 
+}
+
+/* 4. Polling Flow Animation */
+@keyframes u-polling-flow {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: -100; }
+}
+.u-polling-path { animation: u-polling-flow 6s linear infinite; stroke-dasharray: 10 30; stroke-linecap: round; }
+
+/* 5. Portal Background Layers */
+.u-portal-bg-full { 
+    position: absolute; inset: 0; 
+    background: url('/images/tactical_portal_bg.png') center/cover no-repeat; 
+    opacity: 0.8; pointer-events: none; z-index: 0; 
+    filter: saturate(1.2) contrast(1.1); 
+}
+.u-portal-bg-overlay { 
+    position: absolute; inset: 0; 
+    background: radial-gradient(circle at center, rgba(2, 6, 23, 0) 0%, rgba(2, 6, 23, 0.4) 60%, #020617 100%); 
+    z-index: 1; pointer-events: none; 
+}
+
+/* 6. Interaction Trigger */
+.u-interaction-trigger { cursor: pointer; }
+
+/* 7. Shadow Glow Utility */
+.u-shadow-glow { box-shadow: 0 0 15px rgba(var(--gold), 0.3); }
+
+/* 8. Tactical Logic Flowchart */
+.u-flow-node { 
+    @apply border border-white/20 bg-white/5 rounded-sm p-3 font-mono text-[10px] text-white/80 uppercase tracking-widest flex flex-col items-center justify-center gap-1 min-w-[120px] relative;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+.u-flow-node:hover { border-color: var(--primary); background: rgba(var(--primary-rgb), 0.1); box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.3); }
+.u-flow-node.u-active { border-color: var(--success); background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+.u-flow-node.u-busy { border-color: var(--warning); background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+.u-flow-arrow { position: absolute; pointer-events: none; overflow: visible !important; filter: drop-shadow(0 0 5px var(--primary)); }
+.u-flow-label { font-size: 8px; font-family: monospace; fill: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; }
+
+.u-topology-base { position: absolute; width: 1300px; height: 600px; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; contain: strict; }
+.u-bg-dots { background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 32px 32px; }
+.u-text-shadow-success { text-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+.u-core-alignment { transform: translate(-50%, -50%) scale(0.78); will-change: transform, opacity; }
+
+/* 9. Portal View Containers */
+.u-portal-chat-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: rgba(10, 12, 18, 0.8);
+    backdrop-filter: blur(10px) saturate(160%);
+    border-radius: 4px;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9), inset 0 0 100px rgba(0,0,0,0.8);
+}
+
+.u-chat-view-container {
+    background: transparent !important;
+    backdrop-filter: none !important;
+}

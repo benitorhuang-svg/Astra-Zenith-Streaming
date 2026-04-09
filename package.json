@@ -1,0 +1,55 @@
+{
+  "name": "astra-zenith-streaming-standalone",
+  "version": "1.0.0",
+  "description": "Standalone Astra Zenith Streaming System (UI + Server)",
+  "type": "module",
+  "main": "server.ts",
+  "scripts": {
+    "start": "tsx server.ts",
+    "dev:ui": "vite",
+    "dev:server": "nodemon --delay 2 --watch server --watch server.ts --ext ts,js --exec \"tsx server.ts\"",
+    "dev:browser": "browser-sync start --proxy 'localhost:5180' --files 'src/**/*' 'public/**/*' 'server/**/*' 'blueprint_viewer.html' --no-open --reload-delay 800",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:ui\"",
+    "dev:full": "concurrently \"npm run dev:server\" \"npm run dev:ui\" \"npm run dev:browser\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "setup:specs": "node setup_specs.js"
+  },
+  "dependencies": {
+    "@_davideast/stitch-mcp": "^0.5.2",
+    "@agentclientprotocol/sdk": "^0.17.1",
+    "@google/genai": "^1.48.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "google-auth-library": "^10.6.2",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@google/adk-devtools": "^0.6.1",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^25.5.0",
+    "browser-sync": "^3.0.4",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.2.0",
+    "globals": "^17.4.0",
+    "nodemon": "^3.0.2",
+    "tailwindcss": "^4.2.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.1",
+    "vite": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=25.0.0"
+  }
+}

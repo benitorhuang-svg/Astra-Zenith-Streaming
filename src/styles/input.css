@@ -1,0 +1,52 @@
+/* ══════════════════════════════════════════════════════════════
+   INPUT.CSS — Pure Tailwind v4 Single-Origin Architecture
+   
+   This is the ONLY CSS entry point. Tailwind compiles everything.
+   See: architecture_design_guidelines.md
+   ══════════════════════════════════════════════════════════════ */
+
+@import "tailwindcss";
+
+/* ── Tailwind Theme Extension ─────────────────────────────── */
+/* Replaces tailwind.config.js (Tailwind v4 uses CSS @theme) */
+@theme {
+    --font-sans: 'Inter', 'Outfit', sans-serif;
+    --font-headline: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --color-primary: var(--primary);
+    --color-secondary: var(--secondary);
+    --color-accent: var(--accent);
+    --color-success: var(--success);
+    --color-bg: var(--background);
+    --color-surface: var(--surface-glass);
+    --color-card: var(--surface-card);
+    --color-text-main: var(--text-main);
+    --color-text-dim: var(--text-dim);
+}
+
+/* ── Layer: Theme (Design Tokens) ─────────────────────────── */
+@import "./theme.css" layer(theme);
+
+/* ── Layer: Components (Atomic Design) ────────────────────── */
+@import "./atoms.css" layer(components);
+@import "./molecules.css" layer(components);
+@import "./organisms.css" layer(components);
+@import "./portal_components.css" layer(components);
+@import "./vfx.css" layer(components);
+
+/* ── Layer: Utilities (Overrides Only) ────────────────────── */
+@import "./overrides.css" layer(utilities);
+
+/* ── Base Reset ───────────────────────────────────────────── */
+@layer base {
+    body {
+        background-color: var(--background);
+        color: var(--text-main);
+        font-family: 'Inter', 'Outfit', sans-serif;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        transition: background-color 0.6s ease, color 0.6s ease;
+    }
+}

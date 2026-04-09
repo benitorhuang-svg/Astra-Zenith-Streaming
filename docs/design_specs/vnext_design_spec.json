@@ -1,0 +1,62 @@
+{
+  "project_metadata": {
+    "identity": "Synapse C2 V-Next Operational Center",
+    "generation_id": "1774913695039",
+    "ui_type": "Command & Control Center (C2) / Operational Dashboard",
+    "design_language": "FUI (Futuristic UI) / Glass-Card Layout"
+  },
+  "visual_foundation": {
+    "canvas_spec": {
+      "aspect_ratio": "1:1 Square Reference",
+      "background": "Deep Space Black (#010409) to Midnight Blue radial gradient",
+      "blur_depth": "80px",
+      "grid_system": {
+        "type": "20px x 20px dot matrix",
+        "color": "#00F7FF",
+        "opacity": 0.05
+      }
+    },
+    "color_system": {
+      "primary_glow": "#00F7FF",
+      "secondary_glow": "#8A2BE2",
+      "data_positive": "#00FFC3",
+      "data_negative": "#FF007A",
+      "neutral_text": "#8899A6",
+      "high_contrast_text": "#FFFFFF"
+    },
+    "typography": {
+      "primary": "Outfit",
+      "mono": "JetBrains Mono",
+      "h1_spec": { "size": "6.2rem", "spacing": "-7px", "weight": "950" }
+    }
+  },
+  "component_architecture": {
+    "top_navigation": {
+      "header_height": "60px",
+      "elements": ["Hamburger Menu", "Power Gate (Bio-Green Glow)", "Signal Strength", "Multi-window Interface Tabs", "Hexagonal Gear Controls"]
+    },
+    "neural_connectivity_panel": {
+      "type": "Centralized Neural Spine",
+      "conduit": "Vertical Cyan Conduit with Flowing Particles",
+      "topology": "12-Node Peripheral Array (T1-B4)",
+      "logic": "1-to-2 Branching with Feedback Loops"
+    },
+    "data_grid_modules": {
+      "C01": { "title": "Core Systems", "special_vFX": "Dual overlapping sine waves" },
+      "C02": { "title": "Asset Efficiency", "special_vFX": "Semi-circular Dial (82%)" },
+      "C03": { "title": "Real-time Metrics", "special_vFX": "Hero Matrix (12,500)" },
+      "C04": { "title": "Logistics Network", "special_vFX": "Dotted Mercator World Map" },
+      "C05": { "title": "Environmental Scan", "special_vFX": "360-degree Sonar Radar" },
+      "C06": { "title": "Operational Flow", "special_vFX": "Process Logic Diagram" }
+    },
+    "footer_status_area": {
+      "diagnostics": ["Oscillo-graph (High-freq Blue Wave)", "Device ID: 017AL", "12-segment Signal bars"],
+      "chrono": ["Digital 24h Clock", "Analog Reference Clock", "Activity Segmented Ring"]
+    }
+  },
+  "vFX_engine": {
+    "grain": { "opacity": 0.04, "mode": "overlay" },
+    "scanline": { "cycle": "12s", "opacity": 0.03 },
+    "aurora": { "blur": "160px", "animation": "30s Pulse/Drift" }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.astra-zenith.io/v1/mission",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Mission_Ingress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"priority\"]}}",
+              "value2": "high"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "Priority_Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "4",
+      "name": "Neural_Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            }
+          ]
+        }
+      },
+      "id": "5",
+      "name": "Mission_Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "FAILURE"
+            }
+          ]
+        }
+      },
+      "id": "6",
+      "name": "Mission_Abort",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [850, 400]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Mission_Ingress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mission_Ingress": {
+      "main": [
+        [
+          {
+            "node": "Priority_Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Priority_Check": {
+      "main": [
+        [
+          {
+            "node": "Neural_Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mission_Abort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Neural_Wait": {
+      "main": [
+        [
+          {
+            "node": "Mission_Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "Astra Zenith Tactical Portal",
+  "short_name": "AstraZenith",
+  "description": "2026 Industrial Grade Multi-Agent Strategic Command & Control Center",
+  "start_url": "/?view=chat",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#010409",
+  "theme_color": "#00F7FF",
+  "icons": [
+    {
+      "src": "images/avatar_cute_robot.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/operator_99.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Chat",
+      "url": "/?view=chat",
+      "icons": [{ "src": "images/operator_99.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Open Telemetry",
+      "url": "/?view=telemetry",
+      "icons": [{ "src": "images/avatar_cute_robot.png", "sizes": "512x512" }]
+    }
+  ]
+}

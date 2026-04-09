@@ -1,0 +1,69 @@
+/* ══════════════════════════════════════════════════════════════
+   ORGANISMS.CSS — Full UI Sections
+   .o-header, .o-log-stream, .o-hud, .o-portal__status-*
+   ══════════════════════════════════════════════════════════════ */
+
+/* 1. Global Shell */
+.o-header {
+    height: 68px; width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2.5rem 0 1rem; 
+    border-bottom: 2px solid var(--header-border);
+    background: var(--header-bg); 
+    color: var(--header-text); 
+    z-index: 100; flex-shrink: 0;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.5), var(--bezel-fx);
+    transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    backdrop-filter: blur(4px);
+}
+
+/* 2. Neural Activity Stream */
+.o-log-stream {
+    height: 100%; border-radius: 0; display: flex; flex-direction: column; overflow: hidden; 
+    background: var(--surface-glass); border: none;
+    box-shadow: var(--shadow-industrial);
+    transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+/* 3. Detail HUD */
+.o-hud {
+    position: fixed; top: 120px; right: 460px; width: 440px; pointer-events: none; z-index: 200;
+    opacity: 0; transform: translateY(20px) scale(0.96); 
+    transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
+}
+.o-hud--active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+
+/* 4. Portal Status Group (non-positional) */
+.o-portal__status-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    pointer-events: auto;
+    min-width: 100px;
+    will-change: transform;
+}
+
+.o-portal__status-group--left { align-items: center; }
+.o-portal__status-group--center { align-items: center; }
+.o-portal__status-group--right { align-items: center; }
+.o-portal__status-group--action { align-items: center; }
+
+.o-portal__status-label {
+    font-size: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    opacity: 0.85;
+}
+
+.o-portal__status-value-box {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 0.25rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+}
