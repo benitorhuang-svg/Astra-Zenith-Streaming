@@ -9,8 +9,9 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "noImplicitAny": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "noEmit": true
   },
-  "include": ["src/**/*", "server.ts", "server/**/*", "probe_models.ts"],
+  "include": ["src/**/*", "server/**/*"],
   "exclude": ["dist", "node_modules"]
 }

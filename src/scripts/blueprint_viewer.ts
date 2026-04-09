@@ -18,10 +18,10 @@ import './atoms/a_avatar';
 import './molecules/m_agent_unit';
 
 // 4. Organisms
-import './organisms/az_header';
+import './organisms/global/Header';
 import './organisms/az_portal';
-import './organisms/az_hud';
-import './organisms/az_telemetry_hud';
+import './organisms/global/HUD';
+import './organisms/global/TelemetryHUD';
 
 
 // Bootstrap the application

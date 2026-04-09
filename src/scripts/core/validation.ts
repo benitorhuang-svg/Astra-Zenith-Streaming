@@ -1,192 +1,113 @@
+import { z } from 'zod';
 import type { AgentPath, AZAgentEvent, MissionMessage, MissionRequest, SessionSnapshot, TelemetrySnapshot } from './types';
 import { normalizeAgentPath } from './types';
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
+// --- ATOMIC SCHEMAS ---
 
-function isString(value: unknown): value is string {
-    return typeof value === 'string';
-}
+export const MissionRequestSchema = z.object({
+    topic: z.string().min(1, 'topic is required'),
+    agents: z.array(z.string()),
+    rounds: z.number().int().positive('rounds must be a positive integer'),
+    tracePath: z.any().optional(),
+    mode: z.enum(['analysis', 'final_summary', 'workflow']).optional(),
+    apiKey: z.string().optional()
+});
 
-function isNumber(value: unknown): value is number {
-    return typeof value === 'number' && Number.isFinite(value);
-}
+export const MissionMessageSchema = z.object({
+    agentCode: z.string().min(1, 'agentCode is required'),
+    agentName: z.string().min(1, 'agentName is required'),
+    agentColor: z.string().min(1, 'agentColor is required'),
+    agentImg: z.string().min(1, 'agentImg is required'),
+    content: z.string(),
+    round: z.number().min(0, 'round must be a non-negative number'),
+    isStreaming: z.boolean().optional(),
+    isImage: z.boolean().optional(),
+    imageUrl: z.string().optional(),
+    path: z.array(z.string()).optional(),
+    reasoning: z.string().optional(),
+    summary: z.string().optional(),
+    nodeName: z.string().optional()
+});
 
-function isStringArray(value: unknown): value is string[] {
-    return Array.isArray(value) && value.every(item => typeof item === 'string');
-}
+export const AgentEventSchema = z.object({
+    id: z.string().min(1, 'id is required'),
+    type: z.enum(['text', 'reasoning', 'tool-call', 'status', 'telemetry', 'system', 'error'] as const),
+    path: z.array(z.string()),
+    timestamp: z.number(),
+    payload: z.any().optional(),
+    agentCode: z.string().optional(),
+    round: z.number().optional(),
+    meta: z.record(z.string(), z.any()).optional()
+});
+
+export const SessionSnapshotSchema = z.object({
+    id: z.string().min(1, 'id is required'),
+    title: z.string().min(1, 'title is required'),
+    messageCount: z.number(),
+    tokenCount: z.number(),
+    compacted: z.boolean().default(false),
+    updatedAt: z.number()
+});
+
+export const TelemetrySnapshotSchema = z.object({
+    activeAgentCode: z.string().nullable().default(null),
+    activeAgentCount: z.number(),
+    currentView: z.string().default('chat'),
+    currentPasses: z.number(),
+    pollingCycles: z.number(),
+    queueDepth: z.number().default(0),
+    tokenCount: z.number().default(0),
+    tokenBudget: z.number().default(0),
+    isCompacting: z.boolean().default(false),
+    lastPath: z.array(z.string()).default([]),
+    logCount: z.number().default(0)
+});
+
+// --- VALIDATION WRAPPERS ---
 
 export function validateMissionRequest(input: unknown): MissionRequest {
-    if (!isRecord(input)) {
-        throw new Error('INVALID_MISSION_REQUEST: payload must be an object');
+    try {
+        const data = MissionRequestSchema.parse(input);
+        return {
+            ...data,
+            topic: data.topic.trim(),
+            apiKey: data.apiKey?.trim(),
+            tracePath: normalizeAgentPath(data.tracePath as AgentPath | string | undefined)
+        } as MissionRequest;
+    } catch (err: any) {
+        throw new Error(`INVALID_MISSION_REQUEST: ${err.errors?.[0]?.message || 'Validation failed'}`, { cause: err });
     }
-
-    const topic = input.topic;
-    const agents = input.agents;
-    const rounds = isNumber(input.rounds) ? input.rounds : 0;
-
-    if (!isString(topic) || !topic.trim()) {
-        throw new Error('INVALID_MISSION_REQUEST: topic is required');
-    }
-
-    if (!Array.isArray(agents) || !agents.every(isString)) {
-        throw new Error('INVALID_MISSION_REQUEST: agents must be a string array');
-    }
-
-    if (!rounds || rounds <= 0) {
-        throw new Error('INVALID_MISSION_REQUEST: rounds must be a positive integer');
-    }
-
-    const tracePath = input.tracePath;
-    const mode = input.mode;
-    const apiKey = input.apiKey;
-
-    if (mode !== undefined && mode !== 'analysis' && mode !== 'final_summary' && mode !== 'workflow') {
-        throw new Error('INVALID_MISSION_REQUEST: invalid mode');
-    }
-
-    if (apiKey !== undefined && !isString(apiKey)) {
-        throw new Error('INVALID_MISSION_REQUEST: apiKey must be a string');
-    }
-
-    return {
-        topic: topic.trim(),
-        agents,
-        rounds: rounds as number,
-        apiKey: apiKey?.trim() || undefined,
-        mode: mode as any,
-        tracePath: normalizeAgentPath(tracePath as AgentPath | string | undefined)
-    };
 }
 
 export function validateMissionMessage(input: unknown): MissionMessage {
-    if (!isRecord(input)) {
-        throw new Error('INVALID_MISSION_MESSAGE: payload must be an object');
+    try {
+        return MissionMessageSchema.parse(input) as MissionMessage;
+    } catch (err: any) {
+        throw new Error(`INVALID_MISSION_MESSAGE: ${err.errors?.[0]?.message || 'Validation failed'}`, { cause: err });
     }
-
-    if (!isString(input.agentCode) || !input.agentCode.trim()) {
-        throw new Error('INVALID_MISSION_MESSAGE: agentCode is required');
-    }
-
-    if (!isString(input.agentName) || !input.agentName.trim()) {
-        throw new Error('INVALID_MISSION_MESSAGE: agentName is required');
-    }
-
-    if (!isString(input.agentColor) || !input.agentColor.trim()) {
-        throw new Error('INVALID_MISSION_MESSAGE: agentColor is required');
-    }
-
-    if (!isString(input.agentImg) || !input.agentImg.trim()) {
-        throw new Error('INVALID_MISSION_MESSAGE: agentImg is required');
-    }
-
-    if (!isString(input.content)) {
-        throw new Error('INVALID_MISSION_MESSAGE: content must be a string');
-    }
-
-    if (!isNumber(input.round) || input.round < 0) {
-        throw new Error('INVALID_MISSION_MESSAGE: round must be a non-negative number');
-    }
-
-    return {
-        agentCode: input.agentCode,
-        agentName: input.agentName,
-        agentColor: input.agentColor,
-        agentImg: input.agentImg,
-        content: input.content,
-        round: input.round,
-        isStreaming: typeof input.isStreaming === 'boolean' ? input.isStreaming : undefined,
-        isImage: typeof input.isImage === 'boolean' ? input.isImage : undefined,
-        imageUrl: isString(input.imageUrl) ? input.imageUrl : undefined,
-        path: isStringArray(input.path) ? input.path : undefined,
-        reasoning: isString(input.reasoning) ? input.reasoning : undefined,
-        summary: isString(input.summary) ? input.summary : undefined,
-        nodeName: isString(input.nodeName) ? input.nodeName : undefined
-    };
 }
 
 export function validateAgentEvent(input: unknown): AZAgentEvent {
-    if (!isRecord(input)) {
-        throw new Error('INVALID_AGENT_EVENT: payload must be an object');
+    try {
+        return AgentEventSchema.parse(input) as AZAgentEvent;
+    } catch (err: any) {
+        throw new Error(`INVALID_AGENT_EVENT: ${err.errors?.[0]?.message || 'Validation failed'}`, { cause: err });
     }
-
-    if (!isString(input.id) || !input.id.trim()) {
-        throw new Error('INVALID_AGENT_EVENT: id is required');
-    }
-
-    if (!isString(input.type) || !input.type.trim()) {
-        throw new Error('INVALID_AGENT_EVENT: type is required');
-    }
-
-    if (!Array.isArray(input.path) || !input.path.every(isString)) {
-        throw new Error('INVALID_AGENT_EVENT: path must be a string array');
-    }
-
-    if (!isNumber(input.timestamp)) {
-        throw new Error('INVALID_AGENT_EVENT: timestamp is required');
-    }
-
-    return {
-        id: input.id,
-        type: input.type as AZAgentEvent['type'],
-        path: input.path,
-        payload: input.payload,
-        timestamp: input.timestamp,
-        agentCode: isString(input.agentCode) ? input.agentCode : undefined,
-        round: isNumber(input.round) ? input.round : undefined,
-        meta: isRecord(input.meta) ? input.meta : undefined
-    };
 }
 
 export function validateSessionSnapshot(input: unknown): SessionSnapshot {
-    if (!isRecord(input)) {
-        throw new Error('INVALID_SESSION_SNAPSHOT: payload must be an object');
+    try {
+        return SessionSnapshotSchema.parse(input) as SessionSnapshot;
+    } catch (err: any) {
+        throw new Error(`INVALID_SESSION_SNAPSHOT: ${err.errors?.[0]?.message || 'Validation failed'}`, { cause: err });
     }
-
-    if (!isString(input.id) || !input.id.trim()) {
-        throw new Error('INVALID_SESSION_SNAPSHOT: id is required');
-    }
-
-    if (!isString(input.title) || !input.title.trim()) {
-        throw new Error('INVALID_SESSION_SNAPSHOT: title is required');
-    }
-
-    if (!isNumber(input.messageCount) || !isNumber(input.tokenCount) || !isNumber(input.updatedAt)) {
-        throw new Error('INVALID_SESSION_SNAPSHOT: numeric fields missing');
-    }
-
-    return {
-        id: input.id,
-        title: input.title,
-        messageCount: input.messageCount,
-        tokenCount: input.tokenCount,
-        compacted: Boolean(input.compacted),
-        updatedAt: input.updatedAt
-    };
 }
 
 export function validateTelemetrySnapshot(input: unknown): TelemetrySnapshot {
-    if (!isRecord(input)) {
-        throw new Error('INVALID_TELEMETRY_SNAPSHOT: payload must be an object');
+    try {
+        return TelemetrySnapshotSchema.parse(input) as TelemetrySnapshot;
+    } catch (err: any) {
+        throw new Error(`INVALID_TELEMETRY_SNAPSHOT: ${err.errors?.[0]?.message || 'Validation failed'}`, { cause: err });
     }
-
-    if (!isNumber(input.activeAgentCount) || !isNumber(input.currentPasses) || !isNumber(input.pollingCycles)) {
-        throw new Error('INVALID_TELEMETRY_SNAPSHOT: count fields missing');
-    }
-
-    return {
-        activeAgentCode: isString(input.activeAgentCode) ? input.activeAgentCode : null,
-        activeAgentCount: input.activeAgentCount,
-        currentView: isString(input.currentView) ? input.currentView : 'chat',
-        currentPasses: input.currentPasses,
-        pollingCycles: input.pollingCycles,
-        queueDepth: isNumber(input.queueDepth) ? input.queueDepth : 0,
-        tokenCount: isNumber(input.tokenCount) ? input.tokenCount : 0,
-        tokenBudget: isNumber(input.tokenBudget) ? input.tokenBudget : 0,
-        isCompacting: Boolean(input.isCompacting),
-        lastPath: Array.isArray(input.lastPath) ? input.lastPath.filter(isString) : [],
-        logCount: isNumber(input.logCount) ? input.logCount : 0
-    };
 }
 

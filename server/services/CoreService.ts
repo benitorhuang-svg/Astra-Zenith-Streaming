@@ -7,8 +7,8 @@ import { pushLog } from './LogService';
  */
 
 export function saveConversationToCore(topic: string, fullContext: string) {
-    const baseDir = path.join(process.cwd(), 'Astra Zenith Streaming', '.az_core');
-    const transcriptDir = path.join(baseDir, 'TRANSCRIPTS');
+    const baseDir = path.join(process.cwd(), 'docs');
+    const transcriptDir = path.join(baseDir, 'transcripts');
     const memoryPath = path.join(baseDir, 'MEMORY.md');
 
     if (!fs.existsSync(transcriptDir)) fs.mkdirSync(transcriptDir, { recursive: true });
@@ -25,7 +25,7 @@ export function saveConversationToCore(topic: string, fullContext: string) {
     // 2. Update MEMORY map
     if (fs.existsSync(memoryPath)) {
         let memoryContent = fs.readFileSync(memoryPath, 'utf8');
-        const pointer = `- **ARCHIVE**: \`${new Date().toLocaleString()}\` | 主題: ${topic} | 路徑: \`.az_core/TRANSCRIPTS/${filename}\`\n`;
+        const pointer = `- **ARCHIVE**: \`${new Date().toLocaleString()}\` | 主題: ${topic} | 路徑: \`docs/transcripts/${filename}\`\n`;
         
         if (memoryContent.includes('*(待對話啟動後，Agent 會在此記錄重要對話的檔案路徑與關鍵字)*')) {
             memoryContent = memoryContent.replace('*(待對話啟動後，Agent 會在此記錄重要對話的檔案路徑與關鍵字)*', pointer);
@@ -39,7 +39,7 @@ export function saveConversationToCore(topic: string, fullContext: string) {
 }
 
 export function extractFactsToMemory(content: string) {
-    const memoryPath = path.join(process.cwd(), 'Astra Zenith Streaming', '.az_core', 'MEMORY.md');
+    const memoryPath = path.join(process.cwd(), 'docs', 'MEMORY.md');
     const factRegex = /\[FACT\]\s*(.*)/g;
     let match;
     let found = false;
@@ -56,7 +56,7 @@ export function extractFactsToMemory(content: string) {
 }
 
 export function getLocalKnowledgeContext(): string {
-    const baseDir = path.join(process.cwd(), 'Astra Zenith Streaming');
+    const baseDir = process.cwd();
     const files = fs.readdirSync(baseDir);
     const txtFiles = files.filter(f => f.endsWith('.txt'));
     let context = "\n\n### [3.2] 本地背景知識庫 (Knowledge Source):\n";
@@ -79,7 +79,7 @@ export function getLocalKnowledgeContext(): string {
  * 🛰️ MULTIMODAL SYNC: Ingest images/PDFs into Vector Graph
  */
 export async function syncMultimodalKnowledge(vectorService: any) {
-    const baseDir = path.join(process.cwd(), 'Astra Zenith Streaming');
+    const baseDir = process.cwd();
     const files = fs.readdirSync(baseDir).filter(f => /\.(jpg|png|pdf|webp)$/i.test(f));
     
     for (const file of files) {

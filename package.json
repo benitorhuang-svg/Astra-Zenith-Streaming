@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "Standalone Astra Zenith Streaming System (UI + Server)",
   "type": "module",
-  "main": "server.ts",
+  "main": "server/index.ts",
   "scripts": {
-    "start": "tsx server.ts",
+    "start": "tsx server/index.ts",
     "dev:ui": "vite",
-    "dev:server": "nodemon --delay 2 --watch server --watch server.ts --ext ts,js --exec \"tsx server.ts\"",
-    "dev:browser": "browser-sync start --proxy 'localhost:5180' --files 'src/**/*' 'public/**/*' 'server/**/*' 'blueprint_viewer.html' --no-open --reload-delay 800",
+    "dev:server": "nodemon --delay 2 --watch server --ext ts,js --exec \"tsx server/index.ts\"",
+    "dev:browser": "browser-sync start --proxy 'localhost:5180' --files 'src/**/*' 'public/**/*' 'server/**/*' 'index.html' --no-open --reload-delay 800",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:ui\"",
     "dev:full": "concurrently \"npm run dev:server\" \"npm run dev:ui\" \"npm run dev:browser\"",
     "build": "vite build",
@@ -16,7 +16,8 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "setup:specs": "node setup_specs.js"
+    "setup:specs": "tsx server/scripts/setup_specs.ts",
+    "probe": "tsx server/scripts/probe_models.ts"
   },
   "dependencies": {
     "@_davideast/stitch-mcp": "^0.5.2",

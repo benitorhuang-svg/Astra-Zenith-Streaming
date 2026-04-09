@@ -1,0 +1,184 @@
+import { Response } from 'express';
+import { pool, type StreamMessage } from '../models/Agent';
+import { pushLog } from './LogService';
+import { contextCacheService } from './ContextCacheService';
+import { telemetryService } from './TelemetryService';
+import { vectorService } from './VectorService';
+import { vaultService } from './ObsidianVaultService';
+import { 
+    saveConversationToCore, 
+    extractFactsToMemory, 
+    getLocalKnowledgeContext 
+} from './CoreService';
+import { GEMINI_API_KEY, isPaidTier } from '../core/config';
+
+export class MissionOrchestrator {
+    
+    async executeDiscussionStream(
+        topic: string, 
+        agentIds: string[], 
+        numRounds: number, 
+        res: Response, 
+        apiKey?: string
+    ) {
+        pushLog(`🌀 [MissionOrchestrator] 啟動戰略任務程序：${topic}`, 'info');
+
+        // 🛡️ HARNESS_PRE_FLIGHT_ROUTING (A1 - Router)
+        const routingResult = await pool.routeIntent(topic);
+        if (!routingResult.allowed) {
+            pushLog(`🚫 [Harness_Intercept] 請求已攔截：${routingResult.reason}`, 'error');
+            res.write(`data: ${JSON.stringify({ error: `Harness_Intercept: ${routingResult.reason}` })}\n\n`);
+            return res.end();
+        }
+
+        try {
+            const localKnowledge = getLocalKnowledgeContext();
+            let currentContext = `[SDD_MODIFIER: ${routingResult.sddModifier}]\n${topic}\n${localKnowledge}`;
+
+            for (let r = 0; r < numRounds; r++) {
+                if (numRounds > 1) {
+                    pushLog(`🔄 執行第 ${r + 1} 輪探討 (SDD_CYCLE)...`, 'info');
+                    res.write(`data: ${JSON.stringify({ round: r + 1, totalRounds: numRounds })}\n\n`);
+                }
+
+                // Phase 5: Explicit Caching for Paid Tier
+                let cachedContentName: string | undefined = undefined;
+                if (isPaidTier && GEMINI_API_KEY) {
+                    cachedContentName = await this.handleContextCaching(currentContext, agentIds[0]);
+                }
+
+                for (const agentId of agentIds) {
+                    const agent = pool.getAgent(agentId);
+                    if (!agent) continue;
+
+                    pushLog(`🧠 [${agentId}] ${agent.name} 正在運算回應...`, 'info');
+                    res.write(`data: ${JSON.stringify({ agent: agentId, status: 'START', round: r + 1 })}\n\n`);
+
+                    const graphContext = await vectorService.getGraphContext(topic, 5);
+                    const messages: StreamMessage[] = [
+                        { role: 'user', content: `【任務背景與核心規格】\n${currentContext}` },
+                        { role: 'user', content: `【當前圖譜關聯】\n${graphContext}` },
+                        { role: 'user', content: `請根據上述內容，進行分析或回應。` }
+                    ];
+
+                    let fullReply = "";
+                    const result = await pool.sendMessage(agentId, messages, (chunk) => {
+                        const cleanChunk = chunk.replace(/\*\*/g, '').replace(/--/g, '');
+                        fullReply += cleanChunk;
+                        res.write(`data: ${JSON.stringify({ agent: agentId, chunk: cleanChunk, round: r + 1 })}\n\n`);
+                    }, apiKey, cachedContentName);
+
+                    // Auto-Vectorization
+                    if (fullReply.length > 30) {
+                        await vectorService.addNode(`node-${Date.now()}-${agentId}`, fullReply, agentId);
+                    }
+
+                    res.write(`data: ${JSON.stringify({ agent: agentId, status: 'END', round: r + 1 })}\n\n`);
+                    
+                    // Guardrail Loop
+                    fullReply = await this.executeGuardrailLoop(agentId, agent.name, messages, fullReply, res, apiKey, cachedContentName, r + 1);
+
+                    extractFactsToMemory(fullReply);
+
+                    // Telemetry
+                    if (result.usage) {
+                        this.recordTelemetry(result.usage, res);
+                    }
+                    
+                    currentContext += `\n\n[${agent.name}]: ${fullReply}`;
+                    await this.applyDynamicDelay(agent.modelName);
+                }
+            }
+
+            // Post-flight Guardrail
+            pushLog(`🛡️ [Harness] 正在執行輸出安全掃描...`, 'warn');
+            const secureContext = await pool.validateOutput(currentContext);
+
+            saveConversationToCore(topic, secureContext);
+            vaultService.exportGraphToVault(topic);
+            
+            res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+            res.end();
+        } catch (e: any) {
+            const message = e instanceof Error ? e.message : String(e);
+            res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+            res.end();
+        }
+    }
+
+    private async handleContextCaching(context: string, agentId: string) {
+        try {
+            const agentForCounting = pool.getAgent(agentId);
+            const tokens = await agentForCounting?.countTokens(context) || 0;
+            
+            if (tokens > 4096) {
+                return await contextCacheService.getOrCreateCache(
+                    `mission-${Date.now()}`, 
+                    agentForCounting?.modelName || 'gemini-3.1-flash-preview',
+                    "You are an expert AI agent working in the Astra Zenith industrial environment.",
+                    context
+                ) || undefined;
+            }
+        } catch (e) {
+            console.warn('[Cache] Token counting or cache creation failed:', e);
+        }
+        return undefined;
+    }
+
+    private async executeGuardrailLoop(agentId: string, agentName: string, baseMessages: StreamMessage[], reply: string, res: Response, apiKey: string | undefined, cacheName: string | undefined, round: number) {
+        let currentReply = reply;
+        let retryCount = 0;
+        while (retryCount < 1) {
+            const guardResult = await pool.validateOutput(currentReply);
+            if (guardResult.startsWith('[REJECT]')) {
+                const feedback = guardResult.replace('[REJECT]', '').trim();
+                pushLog(`⚠️ [Guardrail] A6 檢測到品質偏差，正在引導 ${agentName} 進行自我修正...`, 'warn');
+                
+                const correctionMessages: StreamMessage[] = [
+                    ...baseMessages,
+                    { role: 'assistant', content: currentReply },
+                    { role: 'user', content: `【A6 修正指導】: ${feedback}\n請根據此意見重新生成更符合規格的回應。` }
+                ];
+
+                currentReply = "";
+                res.write(`data: ${JSON.stringify({ agent: agentId, status: 'RETRY', round, feedback })}\n\n`);
+                
+                await pool.sendMessage(agentId, correctionMessages, (chunk) => {
+                    const cleanChunk = chunk.replace(/\*\*/g, '').replace(/--/g, '');
+                    currentReply += cleanChunk;
+                    res.write(`data: ${JSON.stringify({ agent: agentId, chunk: cleanChunk, round, isCorrection: true })}\n\n`);
+                }, apiKey, cacheName);
+
+                retryCount++;
+                pushLog(`✅ [Guardrail] ${agentName} 修正完成`, 'success');
+            } else {
+                break;
+            }
+        }
+        return currentReply;
+    }
+
+    private recordTelemetry(usage: any, res: Response) {
+        const { promptTokenCount, candidatesTokenCount, totalTokenCount } = usage;
+        const cachedCount = usage.cachedContentTokenCount || 0;
+        telemetryService.recordUsage(promptTokenCount, candidatesTokenCount, cachedCount);
+        
+        res.write(`data: ${JSON.stringify({ 
+            usage: { 
+                in: promptTokenCount, 
+                out: candidatesTokenCount, 
+                cached: cachedCount,
+                total: totalTokenCount
+            } 
+        })}\n\n`);
+        pushLog(`📊 負載更新：消耗 ${totalTokenCount} tokens (包含快取: ${cachedCount})`, 'info', { usage });
+    }
+
+    private async applyDynamicDelay(modelName: string) {
+        const isGemma = modelName.toLowerCase().includes('gemma');
+        const dynamicDelay = isGemma ? 300 : 1500;
+        await new Promise(resolve => setTimeout(resolve, dynamicDelay));
+    }
+}
+
+export const missionOrchestrator = new MissionOrchestrator();

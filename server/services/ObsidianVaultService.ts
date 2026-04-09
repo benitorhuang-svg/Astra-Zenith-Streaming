@@ -13,7 +13,7 @@ export class ObsidianVaultService {
 
     constructor() {
         // 預設將 Vault 建置在 .az_core 下，未來可直接 mapping 到 Google Drive
-        this.vaultPath = path.join(process.cwd(), 'Astra Zenith Streaming', '.az_core', 'vault');
+        this.vaultPath = path.join(process.cwd(), 'docs', 'vault');
         if (!fs.existsSync(this.vaultPath)) {
             fs.mkdirSync(this.vaultPath, { recursive: true });
             pushLog(`🗄️ Obsidian Vault 初始化完成: ${this.vaultPath}`, 'info');

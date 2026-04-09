@@ -20,7 +20,7 @@ export default tseslint.config(
   },
   // Frontend/Client-side scripts
   {
-    files: ['src/**/*.ts', 'src/**/*.js', 'sw.js', 'public/**/*.js'],
+    files: ['src/**/*.ts', 'src/**/*.js', 'public/**/*.js'],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -29,6 +29,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', '.az_core/**'],
+    ignores: ['dist/**', 'node_modules/**'],
   }
 );

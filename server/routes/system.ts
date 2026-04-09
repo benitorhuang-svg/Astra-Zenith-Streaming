@@ -37,7 +37,7 @@ router.post('/auth/mode', async (req, res) => {
     const { mode } = req.body;
     setAuthMode(mode);
     pushLog(`🔄 系統連線模式切換: ${mode}...`, 'warn');
-    const agentStatePath = path.join(process.cwd(), '.az_core', 'AGENT_STATE.json');
+    const agentStatePath = path.join(process.cwd(), 'server', 'core', 'AGENT_STATE.json');
     if (fs.existsSync(agentStatePath)) {
         const state = JSON.parse(fs.readFileSync(agentStatePath, 'utf8'));
         await pool.warmup(state.agent_pool);
@@ -89,6 +89,7 @@ router.post('/auth/verify', async (req, res) => {
 
             // 🧠 TIER-AWARE OPTIMIZATION: Dynamically upgrade AGENT_OS_CONFIG
             await optimizeTierModels(isPaid);
+            pool.refreshTierModels(); // Apply to live agents
 
             setGeminiKey(apiKey);
             identifiedTier = isPaid ? 'PAID' : 'FREE';

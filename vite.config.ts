@@ -5,24 +5,13 @@ export default defineConfig({
   root: '.',
   plugins: [
     tailwindcss(),
-    {
-      name: 'rewrite-root',
-      configureServer(server) {
-        server.middlewares.use((req, res, next) => {
-          if (req.url === '/' || req.url === '/index.html') {
-            req.url = '/blueprint_viewer.html';
-          }
-          next();
-        });
-      }
-    }
   ],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: './blueprint_viewer.html',
+        main: './index.html',
       },
     },
   },
