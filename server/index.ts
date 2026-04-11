@@ -25,16 +25,34 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false
 }));
 
-// Serve stationary UI from /public
-app.use(express.static('public'));
-app.use('/scripts', express.static('src/scripts'));
-app.use('/styles', express.static('src/styles'));
-app.use('/images', express.static('public/images'));
+// Serve stationary UI from /public (Production)
+const DIST_PATH = path.join(process.cwd(), 'dist');
+if (fs.existsSync(DIST_PATH)) {
+    console.log(`📦 Serving production build from: ${DIST_PATH}`);
+    app.use(express.static(DIST_PATH));
+} else {
+    console.warn(`⚠️ Warning: Production build directory not found at ${DIST_PATH}. Falling back to source folders.`);
+    app.use(express.static('public'));
+    app.use('/scripts', express.static('src/scripts'));
+    app.use('/styles', express.static('src/styles'));
+    app.use('/images', express.static('public/images'));
+}
 
 // Industrial Routes
 app.use('/api', missionRoutes);
 app.use('/api', systemRoutes);
 app.use('/api/analysis', analysisRoutes);
+
+// Catch-all for SPA navigation
+app.get('*', (req, res, next) => {
+    if (req.url.startsWith('/api')) return next();
+    const indexPath = path.join(DIST_PATH, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.sendFile(path.join(process.cwd(), 'index.html'));
+    }
+});
 
 /**
  * ==========================================
