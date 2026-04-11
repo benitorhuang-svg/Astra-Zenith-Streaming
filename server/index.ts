@@ -98,29 +98,30 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
  * 🚀 SERVER STARTUP (2026 STANDARDS)
  * ==========================================
  */
-app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`🚀 Astra Zenith SDK Hub (2026 Standards) at http://0.0.0.0:${PORT}`);
+// 🚀 Background Initialization (2026 Standards)
+async function bootstrap() {
     console.log(`📂 Current Working Directory: ${process.cwd()}`);
-    
     const azDir = process.cwd();
-    
-    // Warm-up Agent Pool from Core Definition
-    // Updated path to server/core/AGENT_STATE.json
     const agentStatePath = path.join(azDir, 'server', 'core', 'AGENT_STATE.json');
+
     if (fs.existsSync(agentStatePath)) {
         try {
             const state = JSON.parse(fs.readFileSync(agentStatePath, 'utf8'));
             await pool.warmup(state.agent_pool);
             console.log(`✅ 戰術代理人池預熱完成 (${state.agent_pool.length} 節點)`);
             
-            // Warm-up Semantic Graph
             vectorService.loadNodes();
             await syncMultimodalKnowledge(vectorService);
             console.log(`🧠 語義圖譜與多模態資源預熱完成`);
         } catch (e) {
-            console.error(`❌ 代理人池預熱失敗:`, e);
+            console.error(`❌ 基礎設施引發失敗:`, e);
         }
     } else {
         console.warn(`⚠️ Warning: Agent state file not found at ${agentStatePath}`);
     }
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Astra Zenith SDK Hub (2026 Standards) at http://0.0.0.0:${PORT}`);
+    bootstrap().catch(err => console.error('💥 Bootstrap Error:', err));
 });

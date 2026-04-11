@@ -100,6 +100,17 @@ export class MissionOrchestrator {
             }
 
             pushLog(`🛡️ [Harness] 掃描完成`, 'warn');
+            
+            // 💾 AUTO-ARCHIVE TO GOOGLE DRIVE (2026 Standards)
+            const { driveService } = await import('./DriveService');
+            const { GOOGLE_DRIVE_FOLDER_ID } = await import('../core/config');
+            if (GOOGLE_DRIVE_FOLDER_ID) {
+                const transcript = history.map(h => `### ${h.role.toUpperCase()}\n${h.content}\n`).join('\n---\n\n');
+                const fileName = `Discussion_${topic.slice(0, 20)}_${new Date().toISOString().replace(/[:.]/g, '-')}.md`;
+                driveService.uploadFile(fileName, `# Mission: ${topic}\n\n${transcript}`, GOOGLE_DRIVE_FOLDER_ID)
+                    .catch(err => console.error('⚠️ [Archive_Fail]', err));
+            }
+
             res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
             res.end();
         } catch (e: any) {

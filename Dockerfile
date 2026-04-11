@@ -18,16 +18,12 @@ FROM node:25-slim
 
 WORKDIR /app
 
-# Environment variables
-ENV NODE_ENV=production
-ENV PORT=8080
-
 # Copy package files and install production dependencies
 COPY package*.json ./
 RUN npm install --omit=dev
 
-# Install tsx globally or as a dependency to run the server
-RUN npm install -g tsx
+# Install tsx and typescript for runtime execution
+RUN npm install -g tsx typescript
 
 # Copy the build artifacts and server code
 COPY --from=build /app/dist ./dist
@@ -35,8 +31,8 @@ COPY --from=build /app/server ./server
 COPY --from=build /app/public ./public
 COPY --from=build /app/src ./src
 
-# Expose port
+# Expose port (Cloud Run defaults to 8080)
 EXPOSE 8080
 
-# Start the server
+# Start the server using tsx
 CMD ["tsx", "server/index.ts"]

@@ -119,9 +119,20 @@ router.post('/generate-stream', async (req: Request, res: Response) => {
         if (typeof (res as any).flushHeaders === 'function') (res as any).flushHeaders();
         res.write('\n');
 
+        let fullContent = "";
         await pool.sendMessage(id, messages, (chunk) => {
+            fullContent += chunk;
             res.write(String(chunk));
         }, effectiveKey, undefined, model);
+
+        // 💾 AUTO-ARCHIVE INDIVIDUAL CHAT (2026 Standards)
+        const { driveService } = await import('../services/DriveService');
+        const { GOOGLE_DRIVE_FOLDER_ID } = await import('../core/config');
+        if (GOOGLE_DRIVE_FOLDER_ID) {
+            const fileName = `Chat_${id}_${new Date().toISOString().replace(/[:.]/g, '-')}.md`;
+            const logContent = `## Agent: ${id}\n### User Input:\n${messages[messages.length-1].content}\n\n### Agent Response:\n${fullContent}`;
+            driveService.uploadFile(fileName, logContent, GOOGLE_DRIVE_FOLDER_ID).catch(e => console.error(e));
+        }
 
         res.end();
     } catch (error: any) {
