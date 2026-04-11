@@ -36,6 +36,10 @@ export class MissionOrchestrator {
             const missionSpec = `[SDD_MODIFIER: ${routingResult.sddModifier}]\n主題：${topic}\n${localKnowledge}`;
             const missionId = `mission-${Date.now()}`;
 
+            // 🌳 Create Mission ROOT node
+            const rootNodeId = `root-${missionId}`;
+            await vectorService.addNode(rootNodeId, topic, 'SYSTEM', undefined, 'ROOT', topic);
+
             // Phase 5: Optimization — Cache the Base Mission Spec once for the entire session if in Paid Tier
             let baseCacheName: string | undefined = undefined;
             if (isPaidTier && GEMINI_API_KEY) {
@@ -73,20 +77,41 @@ export class MissionOrchestrator {
                         res.write(`data: ${JSON.stringify({ agent: agentId, chunk: cleanChunk, round: r + 1 })}\n\n`);
                     }, apiKey, baseCacheName);
 
-                    // Auto-Vectorization
+                    // 🌿 Create Agent BRANCH node
+                    const branchId = `branch-${Date.now()}-${agentId}`;
+                    await vectorService.addNode(branchId, fullReply.slice(0, 500), agentId, rootNodeId, 'BRANCH', `${agent.name} 階段性分析`);
+
+                    // 🍃 Semantic Chunker: Split massive output into LEAF nodes linked to BRANCH
                     if (fullReply.length > 30) {
-                        await vectorService.addNode(`node-${Date.now()}-${agentId}`, fullReply, agentId);
+                        const chunks = fullReply.split(/【解說】/);
+                        for (let i = 0; i < chunks.length; i++) {
+                            const chunkContent = chunks[i].trim();
+                            if (chunkContent.length < 20) continue;
+                            
+                            const nodeContent = i === 0 && !fullReply.startsWith('【解說】') 
+                                ? chunkContent 
+                                : `【解說】${chunkContent}`;
+                                
+                            const nodeId = `leaf-${Date.now()}-${agentId}-${i}`;
+                            
+                            // Extract title if possible (from Summary)
+                            const summaryMatch = nodeContent.match(/【Summary】[:：]\s*(.*)/);
+                            const chunkTitle = summaryMatch ? summaryMatch[1].slice(0, 40) : undefined;
+
+                            await vectorService.addNode(nodeId, nodeContent, agentId, branchId, 'LEAF', chunkTitle);
+                        }
+                        pushLog(`🧩 [路徑分析] 已在分支 ${agentId} 下建立 ${chunks.length - 1} 個子節點`, 'success');
                     }
 
                     res.write(`data: ${JSON.stringify({ agent: agentId, status: 'END', round: r + 1 })}\n\n`);
                     
                     // Guardrail Loop
-                    fullReply = await this.executeGuardrailLoop(agentId, agent.name, messages, fullReply, res, apiKey, cachedContentName, r + 1);
+                    fullReply = await this.executeGuardrailLoop(agentId, agent.name, messages, fullReply, res, apiKey, baseCacheName, r + 1);
 
                     extractFactsToMemory(fullReply);
 
                     // Telemetry
-                    if (result.usage) {
+                    if (result && result.usage) {
                         this.recordTelemetry(result.usage, res);
                     }
                     
@@ -102,7 +127,8 @@ export class MissionOrchestrator {
                         pushLog(`✂️ [Context] 執行對話剪裁 (保留核心規格 + 最近 8 回合)`, 'warn');
                     }
                     
-                    await this.applyDynamicDelay(agent.modelName);
+                    // Critical: Increase delay for Matrix Mode to prevent 429 after heavy output
+                    await this.applyDynamicDelay(agent.modelName, fullReply.length);
                 }
             }
 
@@ -191,10 +217,21 @@ export class MissionOrchestrator {
         pushLog(`📊 負載更新：消耗 ${totalTokenCount} tokens (包含快取: ${cachedCount})`, 'info', { usage });
     }
 
-    private async applyDynamicDelay(modelName: string) {
+    private async applyDynamicDelay(modelName: string, lastOutputLength: number = 0) {
         const isGemma = modelName.toLowerCase().includes('gemma');
-        const dynamicDelay = isGemma ? 300 : 1500;
-        await new Promise(resolve => setTimeout(resolve, dynamicDelay));
+        const isFlash = modelName.toLowerCase().includes('flash');
+        
+        // Base delay + extra buffer if output was massive (to respect TPM/RPM)
+        let delay = isGemma ? 500 : 2000;
+        
+        if (lastOutputLength > 4000) {
+            delay += 3000; // Extra cooldown for heavy lifting
+            pushLog(`❄️ [Cooling] 檢測到大規模輸出，強制冷卻 ${delay}ms 以規避 429`, 'info');
+        } else if (!isFlash) {
+            delay += 2000; // Pro models need more breathing room
+        }
+
+        await new Promise(resolve => setTimeout(resolve, delay));
     }
 }
 

@@ -34,22 +34,38 @@ export class VectorService {
     /**
      * Add new node and calculate spatial position (Simple 2D projection)
      */
-    async addNode(id: string, content: string | any[], agentCode: string): Promise<VectorNode> {
+    async addNode(
+        id: string, 
+        content: string | any[], 
+        agentCode: string, 
+        parentId?: string, 
+        type: VectorNodeType = 'LEAF',
+        title?: string
+    ): Promise<VectorNode> {
         const vector = await embeddingService.getEmbedding(content);
         
         const contentStr = Array.isArray(content) 
             ? `[Multimodal Content: ${content.length} parts]` 
             : content;
 
+        // Base coordinates influenced by Parent if available
         let x = 500 + (Math.random() - 0.5) * 200;
         let y = 500 + (Math.random() - 0.5) * 200;
+        
+        if (parentId) {
+            const parent = this.nodes.find(n => n.id === parentId);
+            if (parent) {
+                x = parent.x + (Math.random() - 0.5) * 100;
+                y = parent.y + (Math.random() - 0.5) * 100;
+            }
+        }
 
-        // Semantic Gravity
+        // Semantic Gravity (Secondary influence)
         if (this.nodes.length > 0) {
             let avgX = 0, avgY = 0, count = 0;
             this.nodes.forEach(n => {
                 const sim = this.cosineSimilarity(vector, n.vector);
-                if (sim > 0.7) { 
+                if (sim > 0.8) { 
                     avgX += n.x * sim;
                     avgY += n.y * sim;
                     count += sim;
@@ -63,7 +79,10 @@ export class VectorService {
 
         const newNode: VectorNode = {
             id, content: contentStr, agentCode, vector, x, y,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            parentId,
+            type,
+            title: title || (contentStr.slice(0, 30) + '...')
         };
         this.nodes.push(newNode);
         this.saveNodes();
@@ -71,15 +90,32 @@ export class VectorService {
     }
 
     getGraphData(): GraphData {
-        const links: { source: string, target: string, value: number }[] = [];
+        const links: any[] = [];
+        
+        // 1. Hierarchical Links (Explicit Parent-Child)
+        this.nodes.forEach(n => {
+            if (n.parentId) {
+                links.push({
+                    source: n.parentId,
+                    target: n.id,
+                    value: 1.0,
+                    type: 'HIERARCHICAL'
+                });
+            }
+        });
+
+        // 2. Semantic Links (Vector Similarity)
         for (let i = 0; i < this.nodes.length; i++) {
             for (let j = i + 1; j < this.nodes.length; j++) {
+                if (this.nodes[i].parentId === this.nodes[j].id || this.nodes[j].parentId === this.nodes[i].id) continue;
+                
                 const sim = this.cosineSimilarity(this.nodes[i].vector, this.nodes[j].vector);
-                if (sim > 0.75) {
+                if (sim > 0.82) { // Higher threshold for semantic links when we have hierarchy
                     links.push({
                         source: this.nodes[i].id,
                         target: this.nodes[j].id,
-                        value: sim
+                        value: sim,
+                        type: 'SEMANTIC'
                     });
                 }
             }

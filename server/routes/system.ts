@@ -84,7 +84,10 @@ router.post('/auth/verify', async (req, res) => {
 
             // 🛰️ MODEL_DISCOVERY: Search for available models to determine Tier
             const modelList = await client.models.list();
-            const modelNames = (modelList as any).data.map((model: any) => model.name || "");
+            
+            // INDUSTRIAL DEFENSE: Handle variant SDK response structures (data, models, or raw array)
+            const models = (modelList as any).data || (modelList as any).models || (Array.isArray(modelList) ? modelList : []);
+            const modelNames = models.map((model: any) => model.name || "");
             const isPaid = modelNames.some(name => /pro|ultra/i.test(name));
 
             // 🧠 TIER-AWARE OPTIMIZATION: Dynamically upgrade AGENT_OS_CONFIG

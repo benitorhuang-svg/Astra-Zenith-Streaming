@@ -62,6 +62,13 @@ export function shouldFallback(message: string): boolean {
     return /quota|resource_exhausted|not found|not supported|unavailable|deadline exceeded|too many requests|rate limit|permission denied|temporarily unavailable/i.test(message);
 }
 
+export function isRetryable(message: string): boolean {
+    const status = extractStatusCode(message);
+    // Transient server errors (500, 502, 503, 504) and rate limits (429) are retryable
+    if (status && [429, 500, 502, 503, 504].includes(status)) return true;
+    return /quota|resource_exhausted|unavailable|deadline exceeded|too many requests|rate limit|temporarily unavailable/i.test(message);
+}
+
 export function buildCandidateModels(agentId: string, primaryModel: string): string[] {
     const roleFallbacks = agentId === 'A1' || agentId === 'A6' ? LEADER_FALLBACK_MODELS : WORKER_FALLBACK_MODELS;
     return dedupeModels([primaryModel, ...roleFallbacks, ...MODEL_FALLBACKS]);

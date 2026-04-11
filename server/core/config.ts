@@ -45,7 +45,7 @@ export const AGENT_OS_CONFIG = {
 };
 
 // Official 2026 Model Fleet: Gemini 3.1 & Gemma 4
-export const MODEL_FALLBACKS: string[] = (process.env.MODEL_FALLBACKS || 'gemini-3.1-pro-preview,gemini-3.1-flash-lite-preview,gemma-4-31b-it,gemma-4-26b-a4b-it')
+export const MODEL_FALLBACKS: string[] = (process.env.MODEL_FALLBACKS || 'gemini-3.1-pro-preview,gemini-3.1-flash-lite-preview,gemma-4-31b-it,gemma-4-26b-a4b-it,gemma-4-e4b-it,gemma-4-e2b-it')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);

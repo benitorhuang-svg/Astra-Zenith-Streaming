@@ -26,13 +26,16 @@
 | **Stable 2.5** | `gemini-2.5-flash` | ✅ | ✅ | **高處理量**：百萬詞元脈絡穩定支援 |
 | **Stable 2.5** | `gemini-2.5-flash-lite` | ✅ | ✅ | **極致效率**：最小化 Token 成本耗損 |
 | **Robotics ER** | `gemini-robotics-er-1.5-preview` | ✅ | ✅ | **具身智能**：思考型模型，實體世界互動優化 |
-| **Open Gemma** | `gemma-4-it` | ✅ | ✅ | **輕量開放**：Google 最新開放權重模型，適合基礎任務 |
+| **Open Gemma** | `gemma-4-31b-it` | ✅ | ✅ | **旗艦效能**：31B 全參數，支持 256K 上下文與 60s 視頻分析 |
+| **Open Gemma** | `gemma-4-26b-a4b-it` | ✅ | ✅ | **極速推理**：26B MoE 架構，256K 上下文，適合高吞吐量數據採集 |
+| **Open Gemma** | `gemma-4-e4b-it` | ✅ | ✅ | **邊緣強效**：4.5B PLE 架構，支持原生音頻輸入與 128K 上下文 |
+| **Open Gemma** | `gemma-4-e2b-it` | ✅ | ✅ | **極致輕量**：2.3B PLE 架構，專為手機/嵌入式端優化 |
 
 ### 🚀 限制與配額 (v2026.04 實時數據)
 - **免費模式 (Free)**: 
     - 基礎配額: 15 RPM / **1,500 RPD (每日限制)**。
     - **Robotics-ER 限制**: 單日上限為 **500 RPD** (此額度與 Flash-Lite 共用 1,500 總額)。
-    - **Gemma 4**: 目前為免費試用階段，不佔用核心 Gemini RPD 配額。
+    - **Gemma 4**: 目前為免費試用階段，不佔用核心 Gemini RPD 配額。支持原生多模態 (Text, Image, Audio, Video)。
 - **專業模式 (Paid)**: **2,000 RPM (Flash)** / **360 RPM (Pro)**。**無每日上限 (Unlimited RPD)**。
 
 > [!CAUTION]
