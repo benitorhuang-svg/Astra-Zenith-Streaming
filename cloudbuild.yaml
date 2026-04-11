@@ -31,4 +31,4 @@ substitutions:
   _GCR_HOSTNAME: gcr.io # Or pkg.dev for Artifact Registry (requires more config)
 
 options:
-  logging: CLOUD_LOGGING
+  logging: CLOUD_LOGGING_ONLY
