@@ -113,6 +113,7 @@ export interface PortalContext {
     agentPool: any[];
     executionQueue: PortalExecutionTask[];
     apiKey: string;
+    billingTier: 'FREE' | 'PAID' | 'OFFLINE';
     pollingCycles: number;
     scheduleRender: (mask: number) => void;
     pushInternalLog: (msg: string, type?: string) => void;

@@ -97,7 +97,7 @@ function renderOrchestrationFooter(agentPool: Agent[], tableParticipants: (strin
             <div class="flex gap-4 items-center px-6 overflow-hidden">
                 <div class="flex items-center gap-3">
                     ${pooledAgents.slice(0, limit).map(agent => `
-                        <div class="u-agent-pool-item w-12 h-12 bg-white/5 border border-white/10 rounded-xs hover:border-primary transition-all relative cursor-pointer shadow-lg" 
+                        <div class="u-agent-pool-item w-10 h-10 flex items-center justify-center bg-white/5 border border-white/10 rounded-xs hover:border-primary transition-all relative cursor-pointer shadow-lg" 
                              data-agent-code="${agent.code}">
                              <az-avatar url="images/${agent.img}" size="sm"></az-avatar>
                         </div>

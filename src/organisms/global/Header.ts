@@ -16,37 +16,34 @@ export class AZHeader extends HTMLElement {
     private render(): void {
         this.className = "h-16 w-full bg-[#050a10]/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 z-2000 select-none relative";
         this.innerHTML = `
-            <div class="flex flex-col gap-1">
-                <h1 class="text-base font-headline font-black uppercase tracking-[0.4em] text-white leading-none">ASTRA ZENITH</h1>
+            <div class="flex flex-col gap-1.5">
+                <h1 class="text-xl font-headline font-black uppercase tracking-[0.4em] text-white leading-none">ASTRA ZENITH</h1>
                 <div class="flex items-center gap-3">
-                    <span class="text-[8px] font-mono text-primary tracking-widest">TACTICAL_BLUEPRINT</span>
-                    <span id="clock" class="text-[9px] font-mono text-text-dim">00:00:00</span>
+                    <span class="text-[9px] font-mono text-primary tracking-widest opacity-80">TACTICAL_BLUEPRINT</span>
+                    <span id="clock" class="text-[10px] font-mono text-text-dim">00:00:00</span>
                 </div>
             </div>
 
             <!-- Dashboard Tabs -->
-            <div class="flex items-center gap-2">
-                <az-button id="h-btn-chat" variant="ghost" label="主題對話" icon="message-square" size="sm"></az-button>
-                <az-button id="h-btn-archive" variant="ghost" label="任務歸檔" icon="archive" size="sm"></az-button>
-                <az-button id="h-btn-realtime" variant="ghost" label="實時連線" icon="activity" size="sm"></az-button>
-                <az-button id="h-btn-pathway" variant="ghost" label="路徑分析" icon="git-branch" size="sm"></az-button>
-                <az-button id="h-btn-custom-flow" variant="ghost" label="工作流自訂" icon="layout" size="sm"></az-button>
+            <div class="flex items-center gap-3">
+                <az-button id="h-btn-chat" variant="ghost" label="主題對話" icon="message-square" size="md"></az-button>
+                <az-button id="h-btn-archive" variant="ghost" label="任務歸檔" icon="archive" size="md"></az-button>
+                <az-button id="h-btn-realtime" variant="ghost" label="實時連線" icon="activity" size="md"></az-button>
+                <az-button id="h-btn-pathway" variant="ghost" label="路徑分析" icon="git-branch" size="md"></az-button>
+                <az-button id="h-btn-custom-flow" variant="ghost" label="工作流自訂" icon="layout" size="md"></az-button>
             </div>
-
-            <!-- Separator -->
-            <div class="w-px h-4 bg-white/10 mx-2"></div>
 
             <!-- Operator Context -->
             <button id="h-btn-profile" 
-                    class="flex items-center gap-4 px-3 py-1.5 rounded-full hover:bg-white/5 active:scale-95 transition-all group border border-transparent hover:border-white/10 no-drag pointer-events-auto cursor-pointer"
+                    class="flex items-center gap-5 px-5 py-2 rounded-full hover:bg-white/5 active:scale-95 transition-all group border border-transparent hover:border-white/10 no-drag pointer-events-auto cursor-pointer"
                     onclick="window.dispatchEvent(new CustomEvent('az-logout', { bubbles: true, composed: true }))">
-                <div class="flex flex-col items-end gap-0.5 pointer-events-none">
-                    <span id="u-operator-role" class="text-[7px] font-black uppercase tracking-[0.2em] transition-colors leading-none">OFFLINE</span>
+                <div class="flex flex-col items-end gap-1 pointer-events-none">
+                    <span id="u-operator-role" class="text-[10px] font-black uppercase tracking-[0.2em] transition-colors leading-none">OFFLINE</span>
                     <div class="flex items-center gap-1.5">
-                         <span id="u-operator-name" class="text-[10px] font-mono text-white/90 font-black tracking-wider leading-none">USER</span>
+                         <span id="u-operator-name" class="text-xs font-mono text-white/90 font-black tracking-wider leading-none">USER</span>
                     </div>
                 </div>
-                <div id="u-operator-avatar-container" class="relative pointer-events-none w-6 h-6">
+                <div id="u-operator-avatar-container" class="relative pointer-events-none w-8 h-8">
                     <az-avatar id="u-operator-avatar-header" size="fill" url="https://api.dicebear.com/7.x/bottts/svg?seed=Astra" ring="primary"></az-avatar>
                 </div>
             </button>

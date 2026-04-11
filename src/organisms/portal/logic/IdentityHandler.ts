@@ -146,6 +146,23 @@ export class IdentityHandler {
         const apiKey = keyInput?.value.trim() || '';
         const userName = nameInput?.value.trim() || 'OPERATOR_X';
 
+        if (apiKey.toLowerCase() === 'free') {
+            // 🚀 REAL_MODE ENTRY with Free Tier Strategy
+            (window as any).ZENITH_PREVIEW_MODE = false; 
+            
+            GlobalIdentity.update({ 
+                apiKey: 'free', 
+                userName,
+                accessMode: 'API_ACCESS',
+                billingTier: 'FREE' 
+            });
+
+            this.context.apiKey = 'free';
+            this.context._p.serverAuthorized = true;
+            this.context.handleModeSwitch('chat');
+            return;
+        }
+
         if (btn) btn.loading = true;
         this.context.setWelcomeError('');
 

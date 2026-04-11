@@ -33,9 +33,11 @@ export class AZPortal extends HTMLElement {
     public executionQueue: PortalExecutionTask[] = [];
     public logs: any[] = [];
     public apiKey = '';
+    public billingTier: 'FREE' | 'PAID' | 'OFFLINE' = 'OFFLINE';
     public pollingCycles = 3;
     public serverAuthorized = false;
     public welcomeError = '';
+    public selectedArchiveId: string | null = null;
     public telemetryState: PortalTelemetry = {
         peakThroughput: '0 KB/s',
         activeNodes: 0,
@@ -87,6 +89,8 @@ export class AZPortal extends HTMLElement {
             set executionQueue(v) { (this as any)._p.executionQueue = v; },
             get apiKey() { return (this as any)._p.apiKey; },
             set apiKey(v) { (this as any)._p.apiKey = v; },
+            get billingTier() { return (this as any)._p.billingTier; },
+            set billingTier(v) { (this as any)._p.billingTier = v; },
             get pollingCycles() { return (this as any)._p.pollingCycles; },
             set pollingCycles(v) { (this as any)._p.pollingCycles = v; },
             scheduleRender: (m) => this.scheduleRender(m),
@@ -188,6 +192,7 @@ export class AZPortal extends HTMLElement {
         window.addEventListener('az-logout', () => {
              this.serverAuthorized = false;
              this.apiKey = '';
+             (window as any).ZENITH_PREVIEW_MODE = false; // 🚀 RESET PREVIEW ON LOGOUT
              this.handleModeSwitch('welcome');
              this.scheduleRender(DIRTY_WELCOME | DIRTY_ALL);
         });
@@ -230,7 +235,12 @@ export class AZPortal extends HTMLElement {
         if (this.currentView === 'welcome') {
             if (mask & DIRTY_WELCOME || !this.querySelector('#u-welcome-overlay')) {
                 this.innerHTML = renderWelcomeView(this.welcomeError, this.serverAuthorized);
-                if (window.lucide) window.lucide.createIcons({ parent: this });
+                // INDUSTRIAL FIX: Global scan to ensure fragments inside innerHTML are hydrated
+                if (window.lucide) {
+                    setTimeout(() => {
+                        if ((window as any).lucide) (window as any).lucide.createIcons();
+                    }, 0);
+                }
             }
             return;
         }
@@ -257,7 +267,7 @@ export class AZPortal extends HTMLElement {
             const views: Record<string, () => string> = {
                 chat: () => renderChatView(this.messages, this.pollingCycles, this.currentPasses, this.filterRound, this.isStreaming, this.activePrompt),
                 'decision-tree': () => renderDecisionTreeView(this.messages, this.isStreaming),
-                archive: () => renderArchiveView(this.archives, null) as string,
+                archive: () => renderArchiveView(this.archives, this.selectedArchiveId, this.billingTier) as string,
                 logs: () => renderLogsView(this.logs as any, 'ALL', this.telemetryState),
                 table: () => {
                     const modelConfigs = Object.entries(this.agentModels).map(([id, model]) => ({ id, model }));
@@ -301,9 +311,19 @@ export class AZPortal extends HTMLElement {
     public handleTopologySwitch(type: PortalTopology) { this.currentTopology = type; this.scheduleRender(DIRTY_ALL); }
     public pushInternalLog(msg: string, type: string = 'INFO') { this.logs.unshift({ message: msg, type, timestamp: new Date().toLocaleTimeString() } as any); if (this.currentView !== 'welcome') this.scheduleRender(DIRTY_SIDEBAR); }
     public setWelcomeError(error: string) { this.welcomeError = error; this.scheduleRender(DIRTY_WELCOME); }
-    public updateStreamingChunk(agent: any, chunk: string) {
-        const el = document.getElementById('u-streaming-content');
-        if (el) { el.appendChild(document.createTextNode(chunk)); el.scrollTop = el.scrollHeight; }
+    public updateStreamingChunk(agent: { code: string, round: number }, chunk: string) {
+        const streamingId = `u-stream-${agent.code}-${agent.round}`;
+        const el = document.getElementById(streamingId);
+        const scrollEl = document.getElementById('u-chat-scroll');
+        if (el) { 
+            // 🚀 INDUSTRIAL_CLEANUP: Remove placeholder on first real chunk
+            const placeholder = el.querySelector('.animate-pulse');
+            if (placeholder) {
+                el.innerHTML = '';
+            }
+            el.appendChild(document.createTextNode(chunk)); 
+            if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+        }
     }
 
     private patchDecisionTree(mainCont: HTMLElement, html: string) {

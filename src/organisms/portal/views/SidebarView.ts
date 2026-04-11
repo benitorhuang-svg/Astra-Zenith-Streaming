@@ -19,9 +19,9 @@ export function renderSidebar(workingAgents: Agent[], currentTopology: 'linear' 
     return `
         <div class="flex flex-col h-full bg-black/50 border-r border-white/5 relative shadow-inner w-full overflow-x-hidden">
             <!-- Neural Topology (Micro-Compact) -->
-            <div class="px-2 pt-3 pb-2 border-b border-white/5 bg-black/60 flex flex-col items-center gap-2">
-                <span class="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-0.5">模式控制</span>
-                <div id="u-sidebar-topology-icon" class="w-full flex items-center justify-center py-2 bg-white/3 border border-white/5 rounded-xs animate-fade-in group/topo transition-all hover:bg-white/5 cursor-pointer min-h-[32px] relative overflow-hidden">
+            <div class="px-2 pt-1.5 pb-1 border-b border-white/5 bg-black/60 flex flex-col items-center gap-1">
+                <span class="text-[8px] font-black text-white/40 uppercase tracking-[0.2em]">模式控制</span>
+                <div id="u-sidebar-topology-icon" class="w-full flex items-center justify-center py-1 bg-white/3 border border-white/5 rounded-xs animate-fade-in group/topo transition-all hover:bg-white/5 cursor-pointer min-h-[28px] relative overflow-hidden">
                     ${currentTopology === 'linear' ? `
                          <span class="text-[8px] font-mono text-primary font-black uppercase tracking-widest">Linear</span>
                     ` : currentTopology === 'orbital' ? `
@@ -32,14 +32,14 @@ export function renderSidebar(workingAgents: Agent[], currentTopology: 'linear' 
                 </div>
             </div>
 
-            <div class="flex-1 flex flex-col gap-4 items-center mt-6 overflow-y-auto overflow-x-hidden u-scrollbar w-full pb-4 px-2">
+            <div class="flex-1 flex flex-col gap-2.5 items-center mt-3 overflow-y-auto overflow-x-hidden u-scrollbar w-full pb-4 px-2">
                 ${displayedAgents.map(agent => {
                     const isProcessing = executionQueue.length > 0 && executionQueue[0].agentCode === agent.code;
                     const isQueued = !isProcessing && executionQueue.some(q => q.agentCode === agent.code);
-                    const statusColor = isProcessing ? 'bg-primary' : (isQueued ? 'bg-white/40' : 'bg-white/10');
+                    const statusColor = isProcessing ? 'bg-success' : (isQueued ? 'bg-white/40' : 'bg-white/10');
 
                     return `
-                        <div class="u-sidebar-agent-item w-14 h-14 bg-white/3 border ${isProcessing ? 'border-primary shadow-[0_0_20px_rgba(0,255,204,0.4)]' : 'border-white/10'} rounded-xs hover:border-primary/40 transition-all cursor-default shrink-0 relative group" 
+                        <div class="u-sidebar-agent-item w-14 h-14 bg-white/3 border ${isProcessing ? 'border-success shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'border-white/10'} rounded-xs hover:border-success/40 transition-all cursor-default shrink-0 relative group" 
                              data-code="${agent.code}" data-title="${agent.name}">
                              
                              <div class="w-full h-full p-1">
@@ -60,7 +60,7 @@ export function renderSidebar(workingAgents: Agent[], currentTopology: 'linear' 
                 }).join('')}
 
                 ${displayedAgents.length === 0 ? `
-                    <div class="flex flex-col items-center mt-6 opacity-10">
+                    <div class="flex flex-col items-center mt-3 opacity-10">
                         <div class="w-6 h-6 border border-dashed border-white/20 rounded-full flex items-center justify-center animate-spin-slow"></div>
                         <span class="text-[6px] font-mono uppercase tracking-widest mt-2 whitespace-nowrap">Null_Registry</span>
                     </div>

@@ -7,8 +7,9 @@ import type { PortalArchive, ChatMessage } from '../PortalTypes';
 import { renderCommonHeader } from '../../../molecules/m_portal_content_header';
 import { renderCommonFooter } from '../../../molecules/m_portal_content_footer';
 
-export const renderArchiveView = (archives: PortalArchive[] = [], selectedId: string | null = null) => {
+export const renderArchiveView = (archives: PortalArchive[] = [], selectedId: string | null = null, billingTier: string = 'FREE') => {
     const selectedArch = selectedId ? archives.find(a => a.id === selectedId) : archives[0];
+    const isPaid = billingTier === 'PAID';
 
     const header = renderCommonHeader({
         title: '任務歸檔：離線數據歸檔庫',
@@ -36,20 +37,22 @@ export const renderArchiveView = (archives: PortalArchive[] = [], selectedId: st
                      <div class="flex-1 overflow-y-auto u-scrollbar">
                          ${archives.map((arch, i) => {
                              const isSelected = selectedId ? arch.id === selectedId : i === 0;
-                             const isGenerating = arch.status === 'GENERATING';
 
                              return `
                              <div class="u-archive-item relative flex items-center gap-3 px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-all cursor-pointer group ${isSelected ? 'bg-primary/10 border-l-2 border-primary' : ''}" 
                                   data-archive-id="${arch.id}">
                                   
                                   <div class="flex items-center gap-1 shrink-0">
-                                      <button id="u-btn-download-archive" class="w-6 h-6 flex items-center justify-center bg-white/5 border border-white/10 rounded-xs text-white/20 hover:text-primary hover:border-primary/40 transition-all active:scale-90" title="數據匯出">
+                                      <button id="u-btn-download-archive" class="w-6 h-6 flex items-center justify-center bg-white/5 border border-white/10 rounded-xs text-white/20 hover:text-primary hover:border-primary/40 transition-all active:scale-90" title="數據匯出" data-archive-id="${arch.id}">
                                           <i data-lucide="download" class="w-3 h-3"></i>
                                       </button>
-                                      <button class="u-btn-archive-visualize w-6 h-6 flex items-center justify-center bg-white/5 border border-white/10 rounded-xs text-white/20 hover:text-secondary hover:border-secondary/40 transition-all active:scale-90 ${isGenerating ? 'animate-pulse cursor-wait' : ''}" 
-                                              title="圖像化摘要" data-arch-id="${arch.id}" ${isGenerating ? 'disabled' : ''}>
-                                          <i data-lucide="${isGenerating ? 'refresh-cw' : 'image'}" class="w-3 h-3 ${isGenerating ? 'animate-spin' : ''}"></i>
-                                      </button>
+                                      
+                                      ${isPaid ? `
+                                          <button class="u-btn-archive-visualize w-6 h-6 flex items-center justify-center bg-white/5 border border-white/10 rounded-xs text-white/20 hover:text-secondary hover:border-secondary/40 transition-all active:scale-90 opacity-40 cursor-not-allowed" 
+                                                  title="圖像生成功能即將推出 (Coming Soon)" data-arch-id="${arch.id}" disabled>
+                                              <i data-lucide="image" class="w-3 h-3"></i>
+                                          </button>
+                                      ` : ''}
                                   </div>
 
                                   <div class="flex flex-col gap-0.5 flex-1 min-w-0">

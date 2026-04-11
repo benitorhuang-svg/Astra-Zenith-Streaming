@@ -18,11 +18,11 @@ export const renderChatView = (
                     ${renderRoundFilters(pollingCycles, currentPasses, filterRound)}
                     ${renderCycleController(pollingCycles)}
                 </div>
-                <div class="flex-1 flex items-center justify-end pl-10 gap-4">
+                <div class="flex-1 flex items-center justify-end pl-10 gap-3">
                     <input id="u-mission-input" type="text" value="${activePrompt}" 
                            placeholder="ENTER_TACTICAL_COMMAND..." ${isStreaming ? 'disabled' : ''}
-                           class="flex-1 h-11 bg-white/5 border border-white/10 rounded-sm px-4 font-mono text-[13px] outline-none focus:border-primary transition-all">
-                    <az-button id="u-mission-action" icon="${isStreaming ? 'square' : 'send'}" variant="primary" size="sm" style="width: 44px; height: 44px;"></az-button>
+                           class="flex-1 h-12 bg-white/5 border border-white/10 rounded-sm px-4 font-mono text-[13px] outline-none focus:border-primary transition-all text-white/80">
+                    <az-button id="u-mission-action" icon="${isStreaming ? 'square' : 'send'}" variant="primary" size="md" class="w-12 h-12 shrink-0"></az-button>
                 </div>
             </div>
             <div id="u-chat-scroll" class="flex-1 p-10 overflow-y-auto u-scrollbar flex flex-col gap-6 max-w-6xl mx-auto w-full pb-24">

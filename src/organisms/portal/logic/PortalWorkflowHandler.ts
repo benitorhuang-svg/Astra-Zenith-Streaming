@@ -62,7 +62,8 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
         
         const missionId = `AZ-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
         this.context.isStreaming = true;
-        this.context.messages = [];
+        // 🚀 REFERENCE_SAFETY: Clear the existing array but KEEP the reference
+        this.context.messages.length = 0;
         
         const activeArchive: any = {
             id: missionId,
@@ -84,6 +85,7 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
                 if (this.context.stopRequested) break;
                 
                 const task = this.context.executionQueue[0];
+                this.context.currentPasses = task.round; // 🚀 TELEMETRY_JUMP: Update current round progress
                 activeArchive.status = `ACTIVE: ${task.agentCode}`;
                 this.context.scheduleRender(DIRTY_SIDEBAR);
                 
@@ -105,6 +107,17 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
 
     private buildExecutionQueue() {
         this.context.executionQueue = [];
+        
+        // 🚀 INDUSTRIAL_SAFETY: Ensure there's at least one agent assigned if in Linear mode
+        if (this.context.currentTopology !== 'custom') {
+            const activeParticipants = this.context.tableParticipants.filter(Boolean);
+            if (activeParticipants.length === 0) {
+                console.warn('[Workflow] No agents assigned. Auto-assigning A1 for tactical continuity.');
+                this.context.tableParticipants[0] = 'A1';
+                this.context.scheduleRender(DIRTY_ALL);
+            }
+        }
+
         const n8nFlow = (this.context as any).n8nFlow;
         if (this.context.currentTopology === 'custom' && n8nFlow) {
             n8nFlow.nodes.forEach((node: any) => {

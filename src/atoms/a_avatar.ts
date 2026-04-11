@@ -25,10 +25,10 @@ export class AZTacticalAvatar extends HTMLElement {
         const hasRing = this.hasAttribute('ring');
 
         const sizeMap: Record<string, string> = {
-            sm: "w-full h-full", // Full of parent (typically 12x12 or 8x8 in sidebar)
-            md: "w-12 h-12",
-            lg: "w-28 h-28", // Match the original m_agent_unit size
-            fill: "w-full h-full"
+            sm: "w-8 h-8", 
+            md: "w-9 h-9",
+            lg: "w-28 h-28", 
+            fill: "w-full h-full max-w-full max-h-full"
         };
 
         const sizeClass = sizeMap[size] || sizeMap.md;
@@ -51,9 +51,11 @@ export class AZTacticalAvatar extends HTMLElement {
             </div>
         `;
         
-        this.style.display = 'block';
-        this.style.width = '100%';
-        this.style.height = '100%';
+        this.style.display = 'flex';
+        this.style.alignItems = 'center';
+        this.style.justifyContent = 'center';
+        this.style.width = size === 'fill' ? '100%' : 'auto';
+        this.style.height = size === 'fill' ? '100%' : 'auto';
     }
 }
 

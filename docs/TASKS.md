@@ -51,14 +51,14 @@
 
 ### Implementation
 
-- [ ] T012 [US1] 重構 `agents.ts` — 整合 Middleware Pipeline 至 Agent Runner
-- [ ] T013 [US1] 重構 `az_portal_api_service.ts` — Mission API 加入 path 追蹤
-- [ ] T014 [US1] 重構 `az_portal_handlers.ts` — 事件分發改用管線式架構
-- [ ] T015 [US1] 更新 `az_portal_chat_view.ts` — 支援按 Agent path 分組渲染
+- [x] T012 [US1] 重構 agents.ts — 整合 Middleware Pipeline 至 Agent Runner
+- [ ] T013 [US1] 重構 az_portal_api_service.ts — Mission API 加入 path 追蹤
+- [ ] T014 [US1] 重構 az_portal_handlers.ts — 事件分發改用管線式架構
+- [x] T015 [US1] 更新 az_portal_chat_view.ts — 支援按 Agent path 分組渲染
 - [ ] T016 [US1] 實作 Reasoning 摺疊 UI — Agent 「思考鏈」預設摺疊
 - [ ] T017 [US1] 實作 Circuit Breaker — Gemini API RPM/TPM 熔斷機制
-- [ ] T018 [US1] 實作 Agent 狀態即時同步 — `m_agent_unit.ts` 顯示執行中/完成/錯誤
-- [ ] T019 [US1] 實作 `az_portal_logs_view.ts` 日誌持久化 — 寫入 .az_core
+- [x] T018 [US1] 實作 Agent 狀態即時同步 — `m_agent_unit.ts` 顯示執行中/完成/錯誤
+- [ ] T019 [US1] 實作 az_portal_logs_view.ts 日誌持久化 — 寫入 .az_core
 
 **Checkpoint**: US1 完成 — 多代理對話串流功能可用
 

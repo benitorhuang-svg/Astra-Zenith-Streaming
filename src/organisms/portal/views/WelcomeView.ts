@@ -92,11 +92,19 @@ const renderControlCluster = () => `
 `;
 
 const renderOperatorIDInput = (identity: IdentityState) => `
-    <az-input label="01 / Operator_ID" placeholder="IDENT_ID..." value="${identity.userName}" icon="user" id-attr="u-id-name">
-        <div slot="right" id="u-btn-select-avatar" class="cursor-pointer hover:scale-105 transition-transform mr-2">
-            <az-avatar url="${identity.avatarUrl}" size="sm" ring></az-avatar>
+    <div class="flex flex-col gap-2 group/input">
+        <label class="text-[8px] font-black uppercase tracking-[0.3em] font-mono ml-0.5 text-[#00f7ff]/40">01 / Operator_ID</label>
+        <div class="flex items-center gap-2">
+            <!-- Modular Identity Unit -->
+            <az-input placeholder="IDENT_ID..." value="${identity.userName}" icon="user" id-attr="u-id-name" class="flex-1"></az-input>
+            
+            <!-- Tactical Portrait Frame -->
+            <div id="u-btn-select-avatar" class="w-12 h-12 bg-white/3 border border-white/10 rounded-xs flex items-center justify-center cursor-pointer hover:bg-white/5 hover:border-[#00f7ff]/40 transition-all group/avatar shrink-0 relative overflow-hidden">
+                <div class="absolute inset-0 bg-primary/5 opacity-0 group-hover/avatar:opacity-100 transition-opacity"></div>
+                <az-avatar url="${identity.avatarUrl}" size="md" ring glow></az-avatar>
+            </div>
         </div>
-    </az-input>
+    </div>
 `;
 
 const renderCredentialInput = (error: string, authorized: boolean, identity: IdentityState) => {
@@ -121,10 +129,11 @@ const renderCredentialInput = (error: string, authorized: boolean, identity: Ide
     return `
         <div class="flex flex-col gap-1">
             <div class="flex items-center justify-between ml-0.5 mb-1">
+                <label class="text-[8px] font-black uppercase tracking-[0.3em] font-mono text-[#00f7ff]/40">02 / Gemini_Key</label>
                 <a href="https://aistudio.google.com" target="_blank" class="text-[8px] font-mono text-[#00f7ff]/40 hover:text-[#00f7ff] transition-colors no-underline uppercase">Get API Key</a>
             </div>
-            <az-input label="02 / Gemini_Key" placeholder="SECURE_PHRASE..." value="${identity.apiKey}" icon="lock" id-attr="u-id-key" type="${(window as any)._PASSWORD_VISIBLE ? 'text' : 'password'}" ${error ? 'error' : ''}>
-                <button slot="right" id="u-btn-toggle-password" class="text-white/20 hover:text-white/60 transition-colors cursor-pointer flex items-center justify-center mr-4">
+            <az-input placeholder="SECURE_PHRASE..." value="${identity.apiKey}" icon="lock" id-attr="u-id-key" type="${(window as any)._PASSWORD_VISIBLE ? 'text' : 'password'}" ${error ? 'error' : ''}>
+                <button slot="right" id="u-btn-toggle-password" class="text-white/20 hover:text-white/60 transition-colors cursor-pointer flex items-center justify-center">
                      <i data-lucide="${(window as any)._PASSWORD_VISIBLE ? 'eye-off' : 'eye'}" class="w-4 h-4 pointer-events-none"></i>
                 </button>
             </az-input>

@@ -10,6 +10,7 @@ import { composeMiddlewares, withAuditLog, withRetry, withTokenGuard, withTurnTr
 
 /**
  * AgentTaskRunner — The execution engine for individual agent tactical cycles.
+ * Optimized for 2026 Frontier Fleet (Frontier 3.1 & Gemma 4)
  */
 export class AgentTaskRunner {
     constructor(private context: PortalContext) {}
@@ -20,7 +21,6 @@ export class AgentTaskRunner {
         
         const maxRetries = 3;
         const tracePath = createAgentPath(agentCode, `ROUND_${round}`, taskMetadata?.nodeName ?? undefined);
-        const apiContextMessages = this.context.messages.slice(-12).filter(m => !m.content.includes('ERROR:'));
         
         const pipelineContext: PipelineContext = {
             requestId: `${agentCode}-${round}-${Date.now()}`,
@@ -59,7 +59,16 @@ export class AgentTaskRunner {
             const now = new Date();
             const currentTimestamp = `[LOCAL_TIME]: ${now.toLocaleDateString()} ${now.toLocaleTimeString()} UTC+8`;
             let parentContext = '';
-            // Note: n8nFlow is optional in context
+            
+            // 🚀 DYNAMIC_SKILL_INJECTION: Load specialized expertise based on topic
+            let specializedSkill = '';
+            if (this.context.activePrompt.toUpperCase().includes('POWER QUERY') || this.context.activePrompt.toUpperCase().includes('PQ')) {
+                try {
+                    const res = await fetch('./prompt/skill_power_query_architect.md');
+                    if (res.ok) specializedSkill = `\n\n[SPECIALIZED_SKILL_ACTIVE]:\n${await res.text()}`;
+                } catch (e) { console.warn('SKILL_LOAD_FAIL:', e); }
+            }
+
             const ctxAny = this.context as any;
             if (this.context.currentTopology === 'custom' && ctxAny.n8nFlow && taskMetadata?.nodeName) {
                 const parents = Object.entries(ctxAny.n8nFlow.connections)
@@ -72,148 +81,120 @@ export class AgentTaskRunner {
                 }
             }
 
-            const agentTacticalPrompt = (this.context as any)._p.agentPrompts[agentCode] || '';
-
-            // Optimization 2026.04: Strict Role Alternation & Part Consolidation
-            // Gemini API requires alternating 'user' and 'model' roles. 
-            // Consecutive messages of the same role must be merged into a single message with multiple parts.
+            const apiContextMessages = this.context.messages.slice(-12).filter(m => !m.content.includes('ERROR:'));
             
             const rawContext = [
                 ...apiContextMessages.map(m => ({
                     role: m.agentCode === 'USER' ? 'user' : 'model',
-                    text: m.content
+                    content: m.content
                 })),
                 {
                     role: 'user',
-                    text: `${currentTimestamp}\n${parentContext}\n[URGENT_TACTICAL_COMMAND]: ${this.context.activePrompt}\n\n[YOUR_SPECIFIC_FOCUS]: ${shardingDirective}`
+                    content: `${currentTimestamp}\n${parentContext}\n[URGENT_TACTICAL_COMMAND]: ${this.context.activePrompt}\n\n[YOUR_SPECIFIC_FOCUS]: ${shardingDirective}${specializedSkill}`
                 }
             ];
 
-            const consolidatedContents: any[] = [];
+            // 🚀 ROLE_CONSOLIDATION: Gemini requires strictly alternating user/model roles
+            const apiMessages: any[] = [];
             rawContext.forEach(msg => {
-                const last = consolidatedContents[consolidatedContents.length - 1];
+                const last = apiMessages[apiMessages.length - 1];
                 if (last && last.role === msg.role) {
-                    last.parts.push({ text: msg.text });
+                    last.content += `\n\n${msg.content}`;
                 } else {
-                    consolidatedContents.push({
-                        role: msg.role,
-                        parts: [{ text: msg.text }]
-                    });
+                    apiMessages.push({ role: msg.role, content: msg.content });
                 }
             });
 
-            // Final Guard: Gemini API requires the conversation to start with 'user'
-            if (consolidatedContents.length > 0 && consolidatedContents[0].role === 'model') {
-                consolidatedContents.unshift({ role: 'user', parts: [{ text: '[SYSTEM_RESUME_SYNC]' }] });
-            }
-
-            const apiMessages = consolidatedContents;
-
-            let msgObj = pipelineContext.messages.find(message => message.agentCode === agentCode && message.round === round && message.isStreaming);
-
-            // 🚀 FULL_MOCKUP_INTERCEPTION: Bypass API if in Preview Mode
+            // 🚀 FULL_MOCKUP_INTERCEPTION: Only if ZENITH_PREVIEW_MODE is true
             if ((window as any).ZENITH_PREVIEW_MODE) {
-                console.log(`[Mockup_Runner] Intercepting request for Agent: ${agentCode}`);
+                let msgObj = pipelineContext.messages.find(message => message.agentCode === agentCode && message.round === round);
                 if (!msgObj) {
                     msgObj = {
                         agentCode, agentName: agent.name, agentColor: agent.color, agentImg: agent.img,
                         content: '', round, isStreaming: true, nodeName: taskMetadata?.nodeName,
                         path: tracePath, reasoning: ''
                     };
-                    pipelineContext.messages.push(msgObj);
+                    this.context.messages.push(msgObj);
                 }
 
-                // 🎭 AGENT-SPECIFIC MOCK SCRIPT
-                const mockContent = MOCK_SCRIPTS[agentCode] || `[Mockup_Response] Agent ${agentCode} is operating in limited preview mode. Current task: ${this.context.activePrompt}`;
+                const mockContent = MOCK_SCRIPTS[agentCode] || `[Mockup_Response] Agent ${agentCode} is operating in limited preview mode.`;
                 
-                // Trigger UI to show initial empty bubble
                 msgObj.content = '';
-                this.context.messages = [...pipelineContext.messages]; 
-                this.context._p.messages = this.context.messages;
+                msgObj.isStreaming = true;
                 this.context.scheduleRender(DIRTY_CONTENT);
+                await new Promise(r => requestAnimationFrame(r));
 
                 const words = mockContent.split(' ');
                 for (const word of words) {
                     if (this.context.stopRequested) break;
                     msgObj.content += word + ' ';
-                    this.context.updateStreamingChunk(agentCode, word + ' ');
-                    
-                    // 🌳 LIVE_MOCKUP_SYNC: Sync during mockup stream (Silent to avoid flickering)
-                    if (msgObj.content.length % 50 === 0) {
-                        this.syncGraphFromContent(agentCode, agent.name, msgObj.content, round, true);
-                    }
-                    await new Promise(r => setTimeout(r, 30)); // Simulated stream speed
+                    this.context.updateStreamingChunk({ code: agentCode, round }, word + ' ');
+                    await new Promise(r => setTimeout(r, 30));
                 }
 
-                // 🌳 MOCKUP_GRAPH_SYNC: Final sync
+                msgObj.isStreaming = false;
                 this.syncGraphFromContent(agentCode, agent.name, mockContent, round);
                 return;
             }
 
-            const modelId = (this.context as any)._p.agentModels[agentCode] || (this.context.apiKey?.toLowerCase() === 'free' ? 'gemini-3.1-flash-lite-preview' : 'gemini-3.1-pro-preview');
-
-            const response = await fetch('/api/generate-stream', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    agentId: agentCode, 
-                    model: modelId, 
-                    system_instruction: {
-                        parts: [{ text: `${(this.context as any)._p.coreProtocol}\n\n[YOUR_TACTICAL_DATA_PERSONA]:\n${agentTacticalPrompt}` }]
-                    },
-                    contents: apiMessages,
-                    generationConfig: {
-                        temperature: 0.7,
-                        topP: 0.95,
-                        topK: 40,
-                        maxOutputTokens: 12000,
-                        responseMimeType: "text/plain",
-                        presencePenalty: 0.0,
-                        frequencyPenalty: 0.0,
-                        seed: 42
-                    },
-                        safetySettings: [
-                            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
-                            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
-                            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
-                            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" }
-                        ]
-                })
-            });
-
-            if (!response.ok) throw new Error(`STATUS_${response.status}`);
-
-            const reader = response.body?.getReader();
-            if (!reader) throw new Error('STREAM_READER_UNAVAILABLE');
-
+            // 🚀 REAL_MODE_EXECUTION
+            let msgObj = pipelineContext.messages.find(message => message.agentCode === agentCode && message.round === round);
             if (!msgObj) {
                 msgObj = {
                     agentCode, agentName: agent.name, agentColor: agent.color, agentImg: agent.img,
                     content: '', round, isStreaming: true, nodeName: taskMetadata?.nodeName,
                     path: tracePath, reasoning: ''
                 };
-                pipelineContext.messages.push(msgObj);
+                this.context.messages.push(msgObj);
             }
-
-            msgObj.content = '';
             this.context.scheduleRender(DIRTY_CONTENT);
-            
-            const decoder = new TextDecoder();
-            while (true) {
-                if (this.context.stopRequested) { await reader.cancel(); break; }
-                const { done, value } = await reader.read();
-                if (done) break;
-                const chunk = decoder.decode(value, { stream: true });
-                msgObj.content += chunk;
-                this.context.updateStreamingChunk(agentCode, chunk);
+            await new Promise(r => requestAnimationFrame(r));
 
-                // 🚀 LIVE_REAL_SYNC: Sync during real stream to populate path analysis
-                if (msgObj.content.length % 50 === 0) {
-                    this.syncGraphFromContent(agentCode, agent.name, msgObj.content, round, true);
+            // Tier-Aware Model Selection
+            let modelId = (this.context as any)._p.agentModels[agentCode];
+            if (!modelId || (this.context as any)._p.billingTier === 'FREE') {
+                switch(agentCode) {
+                    case 'A1': case 'A4': modelId = 'gemma-4-26b-a4b-it'; break;
+                    case 'A3': modelId = 'gemini-robotics-er-1.5-preview'; break;
+                    default: modelId = 'gemini-3.1-flash-lite-preview';
                 }
             }
 
-            // 🚀 REAL_GRAPH_SYNC: Inject nodes into global state for Path Analysis after real stream
+            try {
+                const response = await fetch('/api/generate-stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        agentId: agentCode, 
+                        model: modelId, 
+                        apiKey: this.context.apiKey,
+                        messages: apiMessages
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `STATUS_${response.status}`);
+                }
+
+                const reader = response.body?.getReader();
+                if (!reader) throw new Error('STREAM_READER_UNAVAILABLE');
+                
+                const decoder = new TextDecoder();
+                while (true) {
+                    if (this.context.stopRequested) { await reader.cancel(); break; }
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    msgObj.content += chunk;
+                    this.context.updateStreamingChunk({ code: agentCode, round }, chunk);
+                }
+            } catch (err: any) {
+                msgObj.content = `[SYSTEM_ERROR]: ${err.message || 'Unknown API Failure'}\n請檢查 API Key 或切換至 Preview Mode。`;
+                msgObj.isStreaming = false;
+                this.context.scheduleRender(DIRTY_CONTENT);
+            }
+
             this.syncGraphFromContent(agentCode, agent.name, msgObj.content, round);
         };
 
@@ -223,11 +204,6 @@ export class AgentTaskRunner {
             withTurnTracking(this.context.pollingCycles),
             withRetry({ maxAttempts: maxRetries, baseDelayMs: 1000 })
         ], async () => {
-            this.context.messages = pipelineContext.messages.map(m => ({
-                ...m,
-                isStreaming: !!m.isStreaming // Force to boolean to match ChatMessage requirement
-            }));
-            this.context._p.messages = this.context.messages;
             await performRequest();
         });
 
@@ -235,8 +211,6 @@ export class AgentTaskRunner {
             await runPipeline(pipelineContext);
         } catch (err) {
             console.error(`[AGENT_RUNNER_ERROR] ${agentCode}:`, err);
-            const msgObj = pipelineContext.messages.find(m => m.agentCode === agentCode && m.round === round);
-            if (msgObj) msgObj.isStreaming = false;
         } finally {
             const finalMessage = pipelineContext.messages.find(m => m.agentCode === agentCode && m.round === round);
             if (finalMessage) finalMessage.isStreaming = false;
@@ -244,15 +218,12 @@ export class AgentTaskRunner {
         }
     }
 
-    /**
-     * 🌳 GRAPH_SYNC_ENGINE: Universal parser and injector for Pathway Analysis.
-     */
     private syncGraphFromContent(agentCode: string, agentName: string, content: string, round: number, silent = false) {
         const win = window as any;
         if (!win.semanticNodes) win.semanticNodes = [];
         if (!win.semanticLinks) win.semanticLinks = [];
 
-        // 1. Ensure ROOT exists
+        // 1. Root Node Auto-Gen
         if (win.semanticNodes.length === 0) {
             win.semanticNodes.push({
                 id: 'root-node', title: this.context.activePrompt.slice(0, 30) || 'CORE_MISSION', type: 'ROOT',
@@ -261,59 +232,105 @@ export class AgentTaskRunner {
         }
 
         const rootNode = win.semanticNodes.find((n: any) => n.type === 'ROOT');
-
-        // 2. Create/Update BRANCH for this Agent
         const branchId = `branch-${agentCode}-${round}`;
         let branch = win.semanticNodes.find((n: any) => n.id === branchId);
         
-        // CHAPTER LABEL: Use first 20 chars as key point bullet
-        const cleanContent = content.replace(/【.*?】/g, '').trim();
-        const chapterTitle = cleanContent.slice(0, 18) + (cleanContent.length > 18 ? '...' : '');
+        const cleanContentForTitle = content.replace(/\[STRATEGIC_MAP\].*?(\n\n|$)/gs, '').replace(/##.*?(\n|$)/g, '').trim();
+        const chapterTitle = cleanContentForTitle.slice(0, 18) + (cleanContentForTitle.length > 18 ? '...' : '');
 
         if (!branch) {
             branch = {
                 id: branchId, title: chapterTitle || `${agentName} Focus`, type: 'BRANCH',
                 agentCode, parentId: rootNode?.id, x: 500,
-                y: 300, content: content // Store full content for side panel
+                y: 300, content: content 
             };
             win.semanticNodes.push(branch);
             if (rootNode) win.semanticLinks.push({ source: rootNode.id, target: branchId, value: 1, type: 'HIERARCHICAL' });
         } else {
-            // Update title as more content streams in
             branch.title = chapterTitle;
             branch.content = content;
         }
 
-        // 3. Create LEAF nodes from Pathway Blocks (【解說】)
-        const chunks = content.split('【解說】');
-        let added = false;
-        chunks.forEach((chunk, i) => {
-            if (i === 0 || chunk.trim().length < 10) return;
-            const leafId = `leaf-${agentCode}-${round}-${i}`;
-            const existingLeaf = win.semanticNodes.find((n: any) => n.id === leafId);
+        // 🚀 AZ-TEP PROTOCOL PARSER: Protocol-First Node Alignment
+        const h2Segments = content.split(/^##\s+/gm);
+        
+        h2Segments.forEach((h2Seg, i) => {
+            if (i === 0) return; 
             
-            // LEAF LABEL: Use first 25 chars of the tactical block
-            const leafContent = chunk.trim();
-            const leafTitle = leafContent.slice(0, 22) + (leafContent.length > 22 ? '...' : '');
+            const h2Lines = h2Seg.split('\n');
+            const h2Header = h2Lines[0].trim();
+            const h2Remainder = h2Lines.slice(1).join('\n').trim();
+            
+            const h2Parts = h2Header.split('|').map(p => p.trim());
+            const h2IdCode = h2Parts[0] || `P${i}`;
+            const uiTitle = h2Parts[1] || h2Parts[0]; 
+            
+            const h2Id = `leaf-h2-${agentCode}-${round}-${h2IdCode}`;
 
-            if (!existingLeaf) {
-                win.semanticNodes.push({
-                    id: leafId, title: leafTitle, type: 'LEAF',
-                    agentCode, parentId: branchId, x: 700,
-                    y: 300, content: `【解說】${leafContent}`
-                });
-                win.semanticLinks.push({ source: branchId, target: leafId, value: 1, type: 'HIERARCHICAL' });
-                added = true;
+            let nodeH2 = win.semanticNodes.find((n: any) => n.id === h2Id);
+            if (!nodeH2) {
+                nodeH2 = {
+                    id: h2Id, title: uiTitle, type: 'LEAF',
+                    agentCode, parentId: branchId, x: 700, y: 300, 
+                    content: `## ${h2Header}`
+                };
+                win.semanticNodes.push(nodeH2);
+                win.semanticLinks.push({ source: branchId, target: h2Id, value: 1, type: 'HIERARCHICAL' });
             } else {
-                existingLeaf.title = leafTitle;
-                existingLeaf.content = `【解說】${leafContent}`;
+                nodeH2.title = uiTitle;
             }
+
+            const h3Segments = h2Remainder.split(/^###\s+/gm);
+            nodeH2.content = `## ${h2Header}\n\n${h3Segments[0]}`;
+
+            h3Segments.forEach((h3Seg, j) => {
+                if (j === 0) return;
+
+                const h3Lines = h3Seg.split('\n');
+                const h3Header = h3Lines[0].trim();
+                const h3Body = h3Lines.slice(1).join('\n').trim();
+                
+                const h3Parts = h3Header.split('|').map(p => p.trim());
+                const h3IdCode = h3Parts[0] || `D${j}`;
+                const h3UiTitle = h3Parts[1] || h3Parts[0];
+                
+                const h3Id = `leaf-h3-${agentCode}-${round}-${h2IdCode}-${h3IdCode}`;
+
+                const nodeH3 = win.semanticNodes.find((n: any) => n.id === h3Id);
+                if (!nodeH3) {
+                    win.semanticNodes.push({
+                        id: h3Id, title: h3UiTitle, type: 'DETAIL',
+                        agentCode, parentId: h2Id, x: 900, y: 300,
+                        content: `### ${h3Header}\n\n${h3Body}`
+                    });
+                    win.semanticLinks.push({ source: h2Id, target: h3Id, value: 0.5, type: 'HIERARCHICAL' });
+                } else {
+                    nodeH3.title = h3UiTitle;
+                    nodeH3.content = `### ${h3Header}\n\n${h3Body}`;
+                }
+            });
         });
+
+        // 5. 🚀 CONVERGENCE_LOGIC: Create a summary node per agent
+        const summaryId = `summary-${agentCode}-${round}`;
+        const existingSummary = win.semanticNodes.find((n: any) => n.id === summaryId);
         
-        if (added) console.log(`[Graph_Sync] Updated ${win.semanticNodes.length} nodes for ${agentCode}`);
-        
-        if (!silent) {
-            this.context.scheduleRender(DIRTY_CONTENT);
+        if (!existingSummary && h2Segments.length > 1) {
+            win.semanticNodes.push({
+                id: summaryId, title: '戰略收斂 / SUMMARY', type: 'ROOT',
+                agentCode, parentId: branchId, x: 600, y: 500,
+                content: `此節點代表 ${agentName} 在本輪對話中的核心總結與收斂。`
+            });
+            
+            h2Segments.forEach((h2Seg, idx) => {
+                if (idx === 0) return;
+                const h2Header = h2Seg.split('\n')[0].trim();
+                const h2IdCode = h2Header.split('|')[0].trim() || `P${idx}`;
+                const h2Id = `leaf-h2-${agentCode}-${round}-${h2IdCode}`;
+                win.semanticLinks.push({ source: h2Id, target: summaryId, value: 0.3, type: 'CONVERGENCE' });
+            });
         }
+
+        if (!silent) this.context.scheduleRender(DIRTY_CONTENT);
     }
 }

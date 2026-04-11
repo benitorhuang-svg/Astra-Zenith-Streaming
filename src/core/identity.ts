@@ -8,7 +8,7 @@ export interface IdentityState {
     avatarUrl: string;
     apiKey: string;
     accessMode: 'PREVIEW' | 'API_ACCESS' | 'OFFLINE';
-    billingTier: 'FREE' | 'PRO' | 'OFFLINE';
+    billingTier: 'FREE' | 'PAID' | 'OFFLINE';
 }
 
 const DEFAULT_AVATAR = './images/avatar_cute_robot.png';

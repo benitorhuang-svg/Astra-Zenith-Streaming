@@ -1,4 +1,4 @@
-import { PortalContext, DIRTY_ALL } from '../PortalTypes';
+import { PortalContext, DIRTY_ALL, DIRTY_CONTENT } from '../PortalTypes';
 import { AGENT_POOL } from '../../../core/agents';
 import { handlePointerDown, handlePointerMove, handlePointerUp } from './PortalDragHandler';
 import { IdentityHandler } from './IdentityHandler';
@@ -37,11 +37,24 @@ export class AZPortalInteractionHandler {
             const flowTab = find('#h-btn-custom-flow'); 
             if (flowTab) { e.preventDefault(); this.context._p.handleModeSwitch('table'); return; }
 
-            // Footer / Topology Switch Events
+            // Neural Topology Switch (Footer & Sidebar)
             if (find('#u-topology-linear')) { e.preventDefault(); this.context._p.handleTopologySwitch('linear'); return; }
             if (find('#u-topology-orbital')) { e.preventDefault(); this.context._p.handleTopologySwitch('orbital'); return; }
             if (find('#u-topology-custom')) { e.preventDefault(); this.context._p.handleTopologySwitch('custom'); return; }
-            if (find('#u-btn-run-flow')) { e.preventDefault(); void this.context.workflow?.handleRunFlow(); return; }
+            
+            // Sidebar Circular Toggle
+            if (find('#u-sidebar-topology-icon')) {
+                e.preventDefault();
+                const current = this.context.currentTopology;
+                const next: Record<string, 'linear' | 'orbital' | 'custom'> = {
+                    'linear': 'orbital',
+                    'orbital': 'custom',
+                    'custom': 'linear'
+                };
+                this.context._p.handleTopologySwitch(next[current] || 'linear');
+                return;
+            }
+            if (find('#u-btn-run-flow') || find('#u-mission-action')) { e.preventDefault(); void this.context.workflow?.handleRunFlow(); return; }
             if (find('#u-btn-close-task')) {
                 e.preventDefault();
                 this.context._p.isEditingTask = false;
@@ -194,7 +207,39 @@ export class AZPortalInteractionHandler {
             if (this.identity.handle(e)) { e.preventDefault(); return; }
             if (this.tactical.handle(target)) { e.preventDefault(); return; }
             
-            // ... (rest of archives etc)
+            // --- ARCHIVE LOGIC ---
+            const archItem = find('.u-archive-item');
+            if (archItem && !find('#u-btn-download-archive')) {
+                const id = archItem.getAttribute('data-archive-id');
+                if (id) {
+                    this.context._p.selectedArchiveId = id;
+                    this.context.scheduleRender(DIRTY_CONTENT);
+                }
+                return;
+            }
+
+            // DOWNLOAD ARCHIVE AS PROFESSIONAL PDF (Tactical Manual)
+            const downloadBtn = find('#u-btn-download-archive');
+            if (downloadBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = downloadBtn.getAttribute('data-archive-id');
+                const archive = this.context.archives.find(a => a.id === id);
+                if (archive && archive.messages) {
+                    this.exportToTacticalPDF(archive);
+                    this.context._p.pushInternalLog(`PDF_PREPARATION_COMPLETE: ${id}`, 'SUCCESS');
+                }
+                return;
+            }
+
+            if (find('#u-btn-clear-all-archive') || find('#u-btn-purge-archive-footer')) {
+                if (confirm('確定要清除所有歸檔紀錄嗎？此操作不可還原。')) {
+                    this.context.archives = [];
+                    this.context._p.selectedArchiveId = null;
+                    this.context.scheduleRender(DIRTY_CONTENT);
+                }
+                return;
+            }
         } catch (err) {
             console.error("Critical Interaction Failure:", err);
         }
@@ -287,5 +332,94 @@ export class AZPortalInteractionHandler {
                 void this.context.workflow?.handleRunFlow();
             }
         }
+    }
+
+    private exportToTacticalPDF(archive: any) {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        const messagesHtml = archive.messages.map((m: any) => {
+            // Parse ## and ### for PDF styling
+            const content = m.content
+                .replace(/^##\s+(.*)$/gm, '<h2 class="pdf-h2">$1</h2>')
+                .replace(/^###\s+(.*)$/gm, '<h3 class="pdf-h3">$1</h3>')
+                .replace(/\n/g, '<br>');
+
+            return `
+                <div class="pdf-agent-block">
+                    <div class="pdf-agent-header" style="border-left-color: ${m.agentColor}">
+                        <span class="agent-name">${m.agentName}</span>
+                        <span class="agent-meta">IDENT: ${m.agentCode} // ROUND: ${m.round}</span>
+                    </div>
+                    <div class="pdf-agent-content">${content}</div>
+                </div>
+            `;
+        }).join('');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>AZ_SDR_${archive.id}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+                    body { 
+                        font-family: 'JetBrains Mono', monospace; 
+                        background: #fff; color: #111; 
+                        padding: 40px; line-height: 1.6;
+                    }
+                    .pdf-cover { 
+                        text-align: center; border: 4px double #000; 
+                        padding: 60px 20px; margin-bottom: 50px; 
+                        page-break-after: always;
+                        display: flex; flex-direction: column; justify-content: center; height: 80vh;
+                    }
+                    .pdf-title { font-size: 32px; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
+                    .pdf-subtitle { font-size: 14px; color: #666; letter-spacing: 0.3em; margin-bottom: 40px; }
+                    .pdf-meta { font-size: 12px; margin-top: 20px; text-align: left; display: inline-block; }
+                    
+                    .pdf-agent-block { margin-bottom: 40px; page-break-inside: avoid; }
+                    .pdf-agent-header { 
+                        background: #f4f4f4; border-left: 10px solid #000; 
+                        padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;
+                        margin-bottom: 15px;
+                    }
+                    .agent-name { font-weight: 900; font-size: 16px; text-transform: uppercase; }
+                    .agent-meta { font-size: 10px; color: #888; }
+                    
+                    .pdf-agent-content { padding: 0 20px; font-size: 13px; }
+                    .pdf-h2 { background: #000; color: #fff; padding: 5px 15px; font-size: 15px; margin-top: 25px; text-transform: uppercase; }
+                    .pdf-h3 { border-bottom: 2px solid #000; display: inline-block; font-size: 14px; margin-top: 20px; }
+                    
+                    @media print {
+                        body { padding: 0; }
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="pdf-cover">
+                    <div class="pdf-title">Strategic Deployment Report</div>
+                    <div class="pdf-subtitle">ASTRA ZENITH TACTICAL OPERATIONS</div>
+                    <div class="pdf-meta">
+                        <strong>MISSION_TOPIC:</strong> ${archive.title}<br>
+                        <strong>MISSION_ID:</strong> ${archive.id}<br>
+                        <strong>TIMESTAMP:</strong> ${archive.time}<br>
+                        <strong>STATUS:</strong> VERIFIED_CONVERGENCE<br>
+                        <strong>SECURITY:</strong> INDUSTRIAL_GRADE_ONLY
+                    </div>
+                </div>
+                <div class="pdf-content-body">
+                    ${messagesHtml}
+                </div>
+                <script>
+                    setTimeout(() => {
+                        window.print();
+                        window.close();
+                    }, 500);
+                </script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
     }
 }
