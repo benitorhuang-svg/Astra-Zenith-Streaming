@@ -28,16 +28,15 @@ export class ContextCacheService {
 
         try {
             const client = getAstraClient(GEMINI_API_KEY);
-            pushLog(`📦 [Cache] 正在為 Paid Tier 建立快取實體...`, 'warn');
+            pushLog(`📦 [Cache] 正在為 Paid Tier 建立快取實體... (v1beta版)`, 'warn');
 
-            const cache = await client.caches.create({
+            // 🚀 Unified SDK 2026: client.cachedContents.create
+            const cache = await (client as any).cachedContents.create({
                 model,
-                config: {
-                    displayName: `AZ_Cache_${key.slice(0, 8)}`,
-                    systemInstruction,
-                    contents: [{ role: 'user', parts: [{ text: content }] }],
-                    ttl: '3600s' // Default 1 hour for mission duration
-                }
+                displayName: `AZ_Cache_${key.slice(0, 8)}`,
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                contents: [{ role: 'user', parts: [{ text: content }] }],
+                ttl: '3600s' // Default 1 hour for mission duration
             });
 
             this.caches.set(key, {

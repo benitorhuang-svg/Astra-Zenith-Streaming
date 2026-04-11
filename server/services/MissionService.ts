@@ -115,9 +115,18 @@ export class MissionOrchestrator {
             const { GOOGLE_DRIVE_FOLDER_ID } = await import('../core/config');
             if (GOOGLE_DRIVE_FOLDER_ID) {
                 const transcript = history.map(h => `### ${(h.role || 'UNKNOWN').toUpperCase()}\n${h.content}\n`).join('\n---\n\n');
-                const fileName = `Discussion_${topic.slice(0, 20)}_${new Date().toISOString().replace(/[:.]/g, '-')}.md`;
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const fileName = `Discussion_${topic.slice(0, 20)}_${timestamp}.md`;
+                const jsonName = `Session_${topic.slice(0, 20)}_${timestamp}.json`;
+
+                // 💾 Human readable Markdown
                 driveService.uploadFile(fileName, `# Mission: ${topic}\n\n${transcript}`, GOOGLE_DRIVE_FOLDER_ID)
-                    .catch(err => console.error('⚠️ [Archive_Fail]', err));
+                    .catch(err => console.error('⚠️ [Archive_MD_Fail]', err));
+                
+                // 📊 Machine readable JSON (for state restoration)
+                const sessionData = { topic, missionId, history, timestamp: new Date().toISOString() };
+                driveService.uploadFile(jsonName, JSON.stringify(sessionData, null, 2), GOOGLE_DRIVE_FOLDER_ID)
+                    .catch(err => console.error('⚠️ [Archive_JSON_Fail]', err));
             }
 
             res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
