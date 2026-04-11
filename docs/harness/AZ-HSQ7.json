@@ -1,0 +1,11 @@
+{
+  "missionId": "AZ-HSQ7",
+  "topic": "genao sdk?",
+  "variables": {},
+  "facts": [],
+  "scaffold": [],
+  "metrics": {
+    "agentScores": {},
+    "totalConflicts": 0
+  }
+}

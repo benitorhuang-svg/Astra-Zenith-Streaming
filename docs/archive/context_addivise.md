@@ -8,7 +8,8 @@
 *核心目標：提供極致效能、最高安全性與可觀測性的技術基底。*
 
 ### 1.1 核心引擎與通訊協議
-- **官方 SDK 原生遷移 (`@google/generative-ai`)**：完全取代 `spawn` CLI，利用原生串流 (Streaming API) 與協助系統調度。
+- **官方 SDK 原生遷移 (`@google/genai`)**：完全取代 `spawn` CLI，利用原生串流 (Streaming API) 與協助系統調度。
+
 - **Google ADK (`@google/adk`) 整合**：導入 Google 官方 Agent Development Kit 作為代理人生命週期、通訊協議與部署工具 (`@google/adk-devtools`) 的標準化框架。
 - **HTTP/2 & SSE 優化**：啟用多路複用 (Multiplexing)，確保多個 Agent 併發串流時不產生 Head-of-line blocking。
 - **Brotli/Gzip 高效壓縮**：在傳輸層減少 70% 以上的文本流量，縮短行動端延遲。

@@ -88,7 +88,7 @@ router.post('/auth/verify', async (req, res) => {
             // INDUSTRIAL DEFENSE: Handle variant SDK response structures (data, models, or raw array)
             const models = (modelList as any).data || (modelList as any).models || (Array.isArray(modelList) ? modelList : []);
             const modelNames = models.map((model: any) => model.name || "");
-            const isPaid = modelNames.some(name => /pro|ultra/i.test(name));
+            const isPaid = modelNames.some((name: string) => /pro|ultra/i.test(name));
 
             // 🧠 TIER-AWARE OPTIMIZATION: Dynamically upgrade AGENT_OS_CONFIG
             await optimizeTierModels(isPaid);
@@ -149,8 +149,8 @@ router.post('/auth/config', (req, res) => {
     if (!mapping) return res.status(400).json({ error: 'Missing mapping' });
 
     Object.entries(mapping).forEach(([agentId, modelName]) => {
-        if (AGENT_OS_CONFIG[agentId]) {
-            AGENT_OS_CONFIG[agentId].model = modelName;
+        if ((AGENT_OS_CONFIG as any)[agentId]) {
+            (AGENT_OS_CONFIG as any)[agentId].model = modelName;
         }
     });
 

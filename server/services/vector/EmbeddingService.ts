@@ -4,54 +4,51 @@ import { externalApiGate } from '../../core/externalApiGate';
 
 export class EmbeddingService {
     /**
-     * Generate 768-dim Embedding using Gemini
-     * Tier-Aware: Free -> 004 / Paid -> 2-preview (Multimodal)
+     * Generate 768-dim Embeddings using Gemini (Batch Supported)
      */
-    async getEmbedding(input: string | any[]): Promise<number[]> {
-        if (!GEMINI_API_KEY) return new Array(768).fill(0);
+    async getEmbeddings(inputs: (string | any[])[], isQuery = false): Promise<number[][]> {
+        if (!GEMINI_API_KEY || inputs.length === 0) return inputs.map(() => new Array(768).fill(0));
         
         try {
             const client = getAstraClient(GEMINI_API_KEY);
             // Default to 004 for text-only free tier, upgrade to 2-preview for multimodal or paid
-            const modelName = isPaidTier || Array.isArray(input) ? 'gemini-embedding-2-preview' : 'text-embedding-004';
+            const modelName = isPaidTier ? 'gemini-embedding-2-preview' : 'text-embedding-004';
 
             return await externalApiGate.runExclusive(async () => {
-                try {
-                    const contentParts = Array.isArray(input) ? input : [{ text: input }];
+                const contents = inputs.map(input => ({
+                    parts: Array.isArray(input) ? input : [{ text: String(input) }]
+                }));
 
-                    const result = await client.models.embedContent({
-                        model: modelName,
-                        contents: [{ parts: contentParts }],
-                        config: { outputDimensionality: 768 }
-                    });
-
-                    let vector = result.embeddings?.[0]?.values ?? result.embedding?.values ?? [];
-
-                    // Manual Normalization for truncated vectors (MRL Standard)
-                    if (isPaidTier && vector.length > 0) {
-                        const magnitude = Math.sqrt(vector.reduce((acc: number, val: number) => acc + val * val, 0));
-                        if (magnitude > 0) {
-                            vector = vector.map((v: number) => v / magnitude);
-                        }
+                const result = await client.models.embedContent({
+                    model: modelName,
+                    contents,
+                    config: { 
+                        outputDimensionality: 768,
+                        // 🚀 TASK_TYPE_OPTIMIZATION (V2 SDK Best Practice)
+                        taskType: isQuery ? 'RETRIEVAL_QUERY' : 'RETRIEVAL_DOCUMENT'
                     }
+                });
 
-                    return vector;
-                } catch (error) {
-                    console.warn(`[EmbeddingService] Primary model failed: ${modelName}`, error);
-                    // Fallback to stable 004
-                    const fallbackText = Array.isArray(input) ? (input[0] as any).text : input;
-                    const res = await client.models.embedContent({
-                        model: 'text-embedding-004',
-                        contents: [{ parts: [{ text: fallbackText }] }],
-                        config: { outputDimensionality: 768 }
-                    });
-                    return res.embeddings?.[0]?.values ?? res.embedding?.values ?? new Array(768).fill(0);
-                }
+                // 🚀 BATCH_RESULT_HARVESTING
+                const rawEmbeddings = (result as any).embeddings || [];
+                return rawEmbeddings.map((emb: any) => {
+                    const vector: number[] = emb.values || [];
+                    if (vector.length === 0) return new Array(768).fill(0);
+
+                    // 🧬 MRL Normalization
+                    const magnitude = Math.sqrt(vector.reduce((acc, val) => acc + val * val, 0));
+                    return magnitude > 0 ? vector.map(v => v / magnitude) : vector;
+                });
             });
         } catch (e) {
-            console.error('[EmbeddingService] Embedding failed:', e);
-            return new Array(768).fill(0);
+            console.error('[EmbeddingService] Batch embedding failed:', e);
+            return inputs.map(() => new Array(768).fill(0));
         }
+    }
+
+    async getEmbedding(input: string | any[], isQuery = false): Promise<number[]> {
+        const results = await this.getEmbeddings([input], isQuery);
+        return results[0];
     }
 }
 

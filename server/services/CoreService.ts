@@ -71,6 +71,10 @@ export function getLocalKnowledgeContext(): string {
 export async function syncMultimodalKnowledge(vectorService: any) {
     const baseDir = process.cwd();
     const files = fs.readdirSync(baseDir).filter(f => /\.(jpg|png|pdf|webp)$/i.test(f));
+    
+    // 🚀 BATCH_SYNC_STRATEGY (2026 SDK Optimized)
+    const pendingNodes: { id: string, parts: any[] }[] = [];
+
     for (const file of files) {
         const filePath = path.join(baseDir, file);
         try {
@@ -80,7 +84,17 @@ export async function syncMultimodalKnowledge(vectorService: any) {
                 { text: `[Multimodal Knowledge: ${file}]` },
                 { fileData: { mimeType: fileMeta.mimeType, fileUri: fileMeta.fileUri } }
             ];
-            await vectorService.addNode(`file-${file}`, parts, 'ADMIN');
-        } catch (e) { console.error(`[Multimodal_Err] ${file}`, e); }
+            pendingNodes.push({ id: `file-${file}`, parts });
+        } catch (e) { console.error(`[Multimodal_Upload_Err] ${file}`, e); }
+    }
+
+    if (pendingNodes.length > 0) {
+        pushLog(`🧠 正在批次同步 ${pendingNodes.length} 個多模態知識節點...`, 'warn');
+        for (const node of pendingNodes) {
+            // VectorService addNode handles its own embedding internally, 
+            // but we could further optimize by batching across nodes.
+            // For now, the individual calls are safe within the concurrency gate.
+            await vectorService.addNode(node.id, node.parts, 'ADMIN');
+        }
     }
 }

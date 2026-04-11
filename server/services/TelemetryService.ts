@@ -8,6 +8,7 @@ export class TelemetryService {
         cachedTokens: 0,
         cacheHitRate: 0,
         searchCalls: 0,
+        groundingSources: 0, // 🚀 NEW: Transparency Tracking
         estimatedSavings: 0,
         totalRequests: 0
     };
@@ -16,11 +17,17 @@ export class TelemetryService {
     private dailyRequestCount: number = 0;
     private lastResetDate: string = new Date().toDateString();
 
-    recordUsage(inputTokens: number, outputTokens: number, cached: number = 0) {
+    recordUsage(inputTokens: number, outputTokens: number, cached: number = 0, grounding?: any) {
         this.metrics.totalTokens += (inputTokens + outputTokens);
         this.metrics.cachedTokens += cached;
         this.metrics.totalRequests++;
         this.dailyRequestCount++;
+        
+        // 🚀 GROUNDING_METRICS_AGGREGATION (2026 SDK Standard)
+        if (grounding && grounding.groundingChunks) {
+            this.metrics.searchCalls++;
+            this.metrics.groundingSources += grounding.groundingChunks.length;
+        }
         
         const now = Date.now();
         this.rpmHistory.push(now);
@@ -61,7 +68,7 @@ export class TelemetryService {
 
     recordSearch() { this.metrics.searchCalls++; }
     getMetrics() { return { ...this.metrics, rpm: this.rpmHistory.length, rpd: this.dailyRequestCount }; }
-    reset() { this.metrics = { totalTokens: 0, cachedTokens: 0, cacheHitRate: 0, searchCalls: 0, estimatedSavings: 0, totalRequests: 0 }; }
+    reset() { this.metrics = { totalTokens: 0, cachedTokens: 0, cacheHitRate: 0, searchCalls: 0, groundingSources: 0, estimatedSavings: 0, totalRequests: 0 }; }
 }
 
 export const telemetryService = new TelemetryService();

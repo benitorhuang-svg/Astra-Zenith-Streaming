@@ -27,7 +27,7 @@ export interface ChatMessage {
     agentImg: string;
     content: string;
     round: number;
-    isStreaming: boolean; // Keep required for UI stability
+    isStreaming?: boolean; // Changed to optional for stability across message types
     nodeName?: string;
     path?: AgentPath;
     reasoning?: string;

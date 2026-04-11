@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { pushLog } from '../services/LogService';
-import { pool } from '../models/Agent';
+import { pool, type StreamMessage } from '../models/Agent';
 import { setGeminiKey, GEMINI_API_KEY } from '../core/config';
 import { missionOrchestrator } from '../services/MissionService';
 import { imageService } from '../services/ImageService';
@@ -35,7 +35,7 @@ interface ImageRequestBody {
 }
 
 interface GenerateStreamBody {
-    messages?: Array<{ role?: string; content: string }>;
+    messages?: StreamMessage[];
     agentId?: string;
     apiKey?: string;
     missionId?: string;

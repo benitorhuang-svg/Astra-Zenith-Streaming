@@ -1,4 +1,4 @@
-import { VectorNode, GraphData } from './VectorTypes';
+import { VectorNode, GraphData, VectorNodeType } from './VectorTypes';
 import { embeddingService } from './EmbeddingService';
 import { vectorPersistence } from './VectorPersistence';
 
@@ -9,8 +9,15 @@ export class VectorService {
         this.loadNodes();
     }
 
+    private saveTimeout: any = null;
+
     saveNodes() {
-        vectorPersistence.saveNodes(this.nodes);
+        // 🚀 BUFFERED_IO_STRATEGY
+        if (this.saveTimeout) clearTimeout(this.saveTimeout);
+        this.saveTimeout = setTimeout(() => {
+            vectorPersistence.saveNodes(this.nodes);
+            this.saveTimeout = null;
+        }, 2000); // 🚀 2s Grace period for batch writes
     }
 
     loadNodes() {
@@ -44,7 +51,7 @@ export class VectorService {
     ): Promise<VectorNode> {
         const vector = await embeddingService.getEmbedding(content);
         
-        const contentStr = Array.isArray(content) 
+        const contentLabel = Array.isArray(content) 
             ? `[Multimodal Content: ${content.length} parts]` 
             : content;
 
@@ -78,15 +85,52 @@ export class VectorService {
         }
 
         const newNode: VectorNode = {
-            id, content: contentStr, agentCode, vector, x, y,
+            id, content, agentCode, vector, x, y,
             timestamp: Date.now(),
             parentId,
             type,
-            title: title || (contentStr.slice(0, 30) + '...')
+            title: title || (typeof content === 'string' ? content.slice(0, 30) : contentLabel.slice(0, 30)) + '...'
         };
         this.nodes.push(newNode);
         this.saveNodes();
         return newNode;
+    }
+
+    /**
+     * 🧭 圖譜導航器 (Multimodal Parts Edition)
+     */
+    async getGraphContextParts(query: string, maxNodes: number = 5): Promise<any[]> {
+        if (this.nodes.length === 0) return [];
+        
+        const queryVector = await embeddingService.getEmbedding(query, true); // 🚀 Query Mode
+        const scoredNodes = this.nodes.map(n => ({
+            node: n,
+            score: this.cosineSimilarity(queryVector, n.vector)
+        })).sort((a, b) => b.score - a.score);
+
+        const entryNodes = scoredNodes.slice(0, 2).map(sn => sn.node);
+        if (entryNodes.length === 0) return [];
+
+        const contextNodes = new Set<VectorNode>(entryNodes);
+        entryNodes.forEach(entry => {
+            this.nodes.forEach(n => {
+                if (!contextNodes.has(n) && contextNodes.size < maxNodes) {
+                    if (this.cosineSimilarity(entry.vector, n.vector) > 0.75) contextNodes.add(n);
+                }
+            });
+        });
+
+        const finalParts: any[] = [{ text: "【神經圖譜關聯知識 (Neural Graph Context)】\n以下資訊為基於邏輯推理路徑所提取的強關聯節點：\n" }];
+        contextNodes.forEach(n => {
+            finalParts.push({ text: `\n[節點單元: ${n.agentCode}]\n` });
+            if (Array.isArray(n.content)) {
+                finalParts.push(...n.content);
+            } else {
+                finalParts.push({ text: String(n.content) });
+            }
+            finalParts.push({ text: "\n---\n" });
+        });
+        return finalParts;
     }
 
     getGraphData(): GraphData {

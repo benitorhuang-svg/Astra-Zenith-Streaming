@@ -1,3 +1,4 @@
+import { type Content, type Part, type Tool } from '@google/genai';
 import { getAstraClient } from '../core/client';
 import { pushLog } from '../services/LogService';
 import { getAgentConfig, DEFAULT_SAFETY_SETTINGS, isPaidTier } from '../core/config';
@@ -6,7 +7,7 @@ import { telemetryService } from '../services/TelemetryService';
 import { StreamMessage } from './AgentTypes';
 import { errorText, shouldFallback, isRetryable, buildCandidateModels, extractStatusCode } from './AgentUtils';
 
-// 🚀 SHARED_COOLDOWN_MAP: Track models that are currently exhausted
+// 🚀 SHARED_COOLDOWN_MAP
 const modelCooldowns: Record<string, number> = {};
 
 /**
@@ -17,9 +18,9 @@ export class PersistentAgent {
     name: string;
     role: string;
     modelName: string;
-    tools?: any[];
+    tools?: Tool[]; // 🚀 Typed Tools
 
-    constructor(id: string, name: string, role: string, modelName: string, tools?: any[]) {
+    constructor(id: string, name: string, role: string, modelName: string, tools?: Tool[]) {
         this.id = id;
         this.name = name;
         this.role = role;
@@ -36,38 +37,34 @@ export class PersistentAgent {
         }
     }
 
-    async streamMessage(messages: StreamMessage[], onChunk: (text: string) => void, apiKey?: string, overrideModel?: string): Promise<{ usage?: any }> {
+    async streamMessage(messages: StreamMessage[], onChunk: (text: string, metadata?: any) => void, apiKey?: string, overrideModel?: string): Promise<{ usage?: any }> {
         try {
             const client = getAstraClient(apiKey);
-            const contents = messages.filter(m => m.content && m.content.trim() !== '').map(m => {
-                let role = (m.role || 'user').toLowerCase();
-                if (role === 'assistant' || role === 'bot' || role === 'model') role = 'model';
-                else role = 'user';
-                return { role, parts: [{ text: m.content }] };
-            });
-
-            if (contents.length === 0) throw new Error('EMPTY_CONTENT');
-
-            return await externalApiGate.runExclusive(async () => {
-                const rawCandidates = buildCandidateModels(this.id, overrideModel || this.modelName);
-                
-                // 🛡️ COOLDOWN_FILTER: Remove models that are currently in cooling state
-                const now = Date.now();
-                const candidates = rawCandidates.filter(m => {
-                    const cooldownUntil = modelCooldowns[m] || 0;
-                    if (now < cooldownUntil) {
-                        console.log(`[Harness_Cooling] Skipping ${m} (Still in penalty for ${Math.ceil((cooldownUntil - now)/1000)}s)`);
-                        return false;
-                    }
-                    return true;
+            
+            // 🚀 UNIFIED_CONTENT_CONVERTER
+            const contents: Content[] = messages
+                .filter(m => (m.content && m.content.trim() !== '') || (m.parts && m.parts.length > 0))
+                .map(m => {
+                    let role = (m.role || 'user').toLowerCase();
+                    if (role === 'assistant' || role === 'bot' || role === 'model') role = 'model';
+                    else role = 'user';
+                    
+                    const parts: Part[] = m.parts || [{ text: m.content || "" }];
+                    return { role, parts };
                 });
 
-                if (candidates.length === 0) {
-                    throw new Error('All candidate models are currently in cooldown penalty. System saturation reached.');
-                }
+            if (contents.length === 0) throw new Error('EMPTY_CONTENT');
+            const cachedContent = (messages as any).cachedContent;
+
+            return await externalApiGate.runExclusive(async () => {
+                const model = overrideModel || this.modelName;
+                const rawCandidates = buildCandidateModels(this.id, model);
+                const candidates = rawCandidates.filter(m => (modelCooldowns[m] || 0) < Date.now());
+
+                if (candidates.length === 0) throw new Error('SYSTEM_SATURATION');
 
                 let lastError = '';
-                for (const model of candidates) {
+                for (const targetModel of candidates) {
                     let retries = 0;
                     const maxRetries = 2;
 
@@ -75,76 +72,98 @@ export class PersistentAgent {
                         try {
                             const budget = telemetryService.checkBudget(isPaidTier);
                             if (!budget.ok) {
-                                if (budget.waitMs && budget.waitMs > 0) {
-                                    await new Promise(r => setTimeout(r, budget.waitMs));
-                                } else throw new Error('DAILY_LIMIT');
+                                if (budget.waitMs) await new Promise(r => setTimeout(r, budget.waitMs));
+                                else throw new Error('DAILY_LIMIT');
                             }
 
-                            pushLog(`[HARNESS] ${this.id} 呼叫: ${model}`, 'warn');
+                            pushLog(`[HARNESS] ${this.id} 呼叫: ${targetModel}${cachedContent ? ' (CACHE_HIT)' : ''}`, 'warn');
+                            
                             const result = await client.models.generateContentStream({
-                                model,
+                                model: targetModel,
                                 contents,
                                 config: {
                                     systemInstruction: this.role,
-                                    generationConfig: { temperature: 0.4, topP: 0.95, maxOutputTokens: 8192 },
+                                    temperature: 0.4, 
+                                    topP: 0.95, 
+                                    maxOutputTokens: 8192,
                                     safetySettings: DEFAULT_SAFETY_SETTINGS,
-                                    tools: this.tools
+                                    tools: this.tools,
+                                    cachedContent: cachedContent || undefined
                                 }
                             });
 
+                            let lastMetadata: any = null;
                             for await (const chunk of result) {
-                                if (chunk.text) onChunk(chunk.text);
+                                if (chunk.text) {
+                                    // 🚀 GROUNDING_METADATA_AWARE
+                                    const metadata = (chunk as any).groundingMetadata;
+                                    if (metadata) lastMetadata = metadata;
+                                    onChunk(chunk.text, metadata);
+                                } else {
+                                    // 🛡️ FINISH_REASON_ANALYSIS (V2 SDK Standard)
+                                    const finishReason = (chunk as any).candidates?.[0]?.finishReason;
+                                    if (finishReason && finishReason !== 'STOP') {
+                                        pushLog(`⚠️ [${this.id}] 串流中斷原因: ${finishReason}`, 'error');
+                                        onChunk(`\n\n[STREAM_INTERRUPTED: ${finishReason}]`);
+                                    }
+                                }
                             }
 
-                            const usage = (result as any).usageMetadata;
-                            return { usage };
+                            const finalUsage = (result as any).usageMetadata || {};
+                            return { 
+                                usage: {
+                                    promptTokenCount: finalUsage.promptTokenCount || 0,
+                                    candidatesTokenCount: finalUsage.candidatesTokenCount || 0,
+                                    totalTokenCount: finalUsage.totalTokenCount || 0,
+                                    cachedContentTokenCount: finalUsage.cachedContentTokenCount || 0,
+                                    groundingMetadata: lastMetadata // 🚀 Pass back for telemetry
+                                }
+                            };
 
                         } catch (err: unknown) {
-                            const em = errorText(err);
-                            const status = extractStatusCode(em);
-                            lastError = em;
+                            lastError = errorText(err);
+                            const status = extractStatusCode(lastError);
 
-                            // 🚨 QUOTA_EXHAUSTED_PENALTY: Apply shared cooldown
                             if (status === 429) {
-                                const retryAfterMatch = em.match(/retry in ([\d.]+)s/);
-                                const delay = retryAfterMatch ? parseFloat(retryAfterMatch[1]) * 1000 : 60000;
-                                modelCooldowns[model] = Date.now() + delay;
-                                pushLog(`🚫 [${model}] 配額耗盡，進入冷卻鎖定 ${Math.ceil(delay/1000)}s`, 'error');
-                                break; // Don't retry this model, move to next candidate immediately
+                                const backoff = Math.pow(2, retries + 1) * 30000;
+                                modelCooldowns[targetModel] = Date.now() + backoff;
+                                pushLog(`🚫 [${targetModel}] 配額耗盡，退避鎖定 ${backoff/1000}s`, 'error');
+                                break; 
                             }
 
-                            if (isRetryable(em) && retries < maxRetries - 1) {
+                            if (isRetryable(lastError) && retries < maxRetries - 1) {
                                 retries++;
-                                const backoff = Math.pow(2, retries) * 1000 + (Math.random() * 1000);
-                                pushLog(`⚠️ [Retry] ${model} (${status}) 重試中...`, 'warn');
-                                await new Promise(r => setTimeout(r, backoff));
+                                const delay = Math.pow(2, retries) * 1000 + (Math.random() * 1000);
+                                pushLog(`⚠️ [Retry] ${targetModel} (${status}) 重試中...`, 'warn');
+                                await new Promise(r => setTimeout(r, delay));
                                 continue;
                             }
 
-                            if (!shouldFallback(em)) throw err;
+                            if (!shouldFallback(lastError)) throw err;
                             break; 
                         }
                     }
                 }
-                throw new Error(`Execution Failed: ${lastError}`);
+                throw new Error(`Fallbacks exhausted: ${lastError}`);
             });
         } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : String(e);
-            onChunk(`\n\n[SYSTEM_RECOVERY_FAILURE]: ${message}\n建議動作：暫停 60 秒後重試，或切換至已付費 API Key。`);
+            onChunk(`\n\n[SYSTEM_RECOVERY_FAILURE]: ${errorText(e)}`);
             return {};
         }
     }
 
-    async reason(content: string, systemPrompt?: string): Promise<string> {
-        if (!content || content.trim() === '') return "";
+    async reason(content: string | any[], systemPrompt?: string): Promise<string> {
+        if (!content || (typeof content === 'string' && content.trim() === '')) return "";
         try {
             const result = await this._runWithFallback(async (model, client) => {
+                const parts = Array.isArray(content) ? content : [{ text: content }];
                 return await client.models.generateContent({
                     model,
-                    contents: [{ role: 'user', parts: [{ text: content }] }],
+                    contents: [{ role: 'user', parts }],
                     config: {
                         systemInstruction: systemPrompt || this.role,
-                        generationConfig: { temperature: 0.5, maxOutputTokens: 4096 },
+                        temperature: 0.5, 
+                        maxOutputTokens: 4096,
                         safetySettings: DEFAULT_SAFETY_SETTINGS,
                         tools: this.tools
                     }
@@ -154,21 +173,20 @@ export class PersistentAgent {
         } catch (e) { console.error(`[Reason_Fail]`, e); return ""; }
     }
 
-    async reasonStructured<T>(content: string, schema: any): Promise<T | null> {
-        if (!content || content.trim() === '') return null;
+    async reasonStructured<T>(content: string | any[], schema: any): Promise<T | null> {
+        if (!content || (typeof content === 'string' && content.trim() === '')) return null;
         try {
             const result = await this._runWithFallback(async (model, client) => {
+                const parts = Array.isArray(content) ? content : [{ text: content }];
                 return await client.models.generateContent({
                     model,
-                    contents: [{ role: 'user', parts: [{ text: content }] }],
+                    contents: [{ role: 'user', parts }],
                     config: {
                         systemInstruction: this.role,
-                        generationConfig: { 
-                            temperature: 0.1, 
-                            maxOutputTokens: 2048,
-                            responseMimeType: 'application/json',
-                            responseSchema: schema
-                        },
+                        temperature: 0.1, 
+                        maxOutputTokens: 2048,
+                        responseMimeType: 'application/json',
+                        responseSchema: schema,
                         safetySettings: DEFAULT_SAFETY_SETTINGS
                     }
                 });
@@ -186,11 +204,16 @@ export class PersistentAgent {
     async countTokens(content: string | StreamMessage[]): Promise<number> {
         try {
             const client = getAstraClient();
+            
+            // 🚀 TOKEN_ENGINE: Using the official Unified SDK countTokens API
+            // Note: Local Tokenizer is available via @google/genai/tokenizer 
+            // but for full multimodal accuracy, the API call is preferred in 2026.
             const contents = Array.isArray(content) 
-                ? content.filter(m => m.content).map(m => ({ role: 'user', parts: [{ text: m.content }] })) 
-                : [{ role: 'user', parts: [{ text: content || "" }] }];
+                ? content.filter(m => m.content).map(m => ({ role: 'user' as any, parts: [{ text: m.content }] })) 
+                : [{ role: 'user' as any, parts: [{ text: content || "" }] }];
+            
             if (contents.length === 0) return 0;
-            const countResult = await (client as any).models.countTokens({ model: this.modelName, contents });
+            const countResult = await client.models.countTokens({ model: this.modelName, contents });
             return countResult.totalTokens || 0;
         } catch { return 0; }
     }

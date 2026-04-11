@@ -7,7 +7,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 
 // Atomic Core & Routes
-import { PORT } from './core/config';
+import { PORT, validateConfig } from './core/config';
 import { pool } from './models/Agent';
 import missionRoutes from './routes/mission';
 import systemRoutes from './routes/system';
@@ -44,7 +44,7 @@ app.use('/api', systemRoutes);
 app.use('/api/analysis', analysisRoutes);
 
 // Catch-all for SPA navigation
-app.get('*', (req, res, next) => {
+app.get(/.*/, (req, res, next) => {
     if (req.url.startsWith('/api')) return next();
     const indexPath = path.join(DIST_PATH, 'index.html');
     if (fs.existsSync(indexPath)) {
@@ -100,6 +100,7 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
  */
 // 🚀 Background Initialization (2026 Standards)
 async function bootstrap() {
+    validateConfig();
     console.log(`📂 Current Working Directory: ${process.cwd()}`);
     const azDir = process.cwd();
     const agentStatePath = path.join(azDir, 'server', 'core', 'AGENT_STATE.json');
@@ -120,6 +121,22 @@ async function bootstrap() {
         console.warn(`⚠️ Warning: Agent state file not found at ${agentStatePath}`);
     }
 }
+
+/**
+ * ==========================================
+ * 🛡️ GRACEFUL SHUTDOWN (Resource Governance)
+ * ==========================================
+ */
+const cleanup = async () => {
+    console.log('\n🛑 [AASC_Kernel] 正在啟動優雅停機程序...');
+    const { contextCacheService } = await import('./services/ContextCacheService');
+    await contextCacheService.clear();
+    console.log('📦 [Cache_Service] 遠端快取已釋放。');
+    process.exit(0);
+};
+
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Astra Zenith SDK Hub (2026 Standards) at http://0.0.0.0:${PORT}`);

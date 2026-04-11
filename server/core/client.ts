@@ -2,53 +2,30 @@ import { GoogleGenAI, type GoogleGenAIOptions } from '@google/genai';
 import { GEMINI_API_KEY, GCP_PROJECT, currentAuthMode } from './config';
 
 /**
- * ASTRA CLIENT FACTORY
- * Provides the core Gemini client based on authentication mode.
+ * ASTRA CLIENT FACTORY (Singleton Edition)
+ * Provides the core Gemini client with instance caching to optimize resource usage.
  */
 
-export interface AstraModelResponse {
-    text: string;
-    usageMetadata?: {
-        promptTokenCount: number;
-        candidatesTokenCount: number;
-        totalTokenCount: number;
-        cachedContentTokenCount?: number;
-    };
-}
-
-export interface AstraGenerativeModel {
-    generateContent(prompt: string): Promise<AstraModelResponse>;
-    embedContent(text: string): Promise<{ embedding: { values: number[] } }>;
-}
-
-/**
- * 🛰️ ASTRA_CLIENT_INTERFACE (2026 Unified SDK Compliant)
- */
-export interface AstraClient extends GoogleGenAI {
-    models: GoogleGenAI['models'] & {
-        generateContentStream(args: {
-            model: string;
-            contents: any;
-            config?: {
-                systemInstruction?: string;
-                generationConfig?: Record<string, unknown>;
-                safetySettings?: any[];
-                tools?: any[];
-                cachedContent?: string;
-                responseMimeType?: string;
-                responseSchema?: any;
-            };
-        }): AsyncIterable<{ text: string; usageMetadata?: any }>;
-    };
-}
+const clientCache = new Map<string, GoogleGenAI>();
 
 export const GEMINI_API_VERSION = process.env.GEMINI_API_VERSION || 'v1beta';
 
-export function getAstraClient(apiKey?: string): AstraClient {
+/**
+ * 🛰️ ASTRA_CLIENT_FACTORY (2026 Unified SDK Compliant)
+ */
+export function getAstraClient(apiKey?: string): GoogleGenAI {
     const key = apiKey || GEMINI_API_KEY;
+    const cacheKey = `${key}_${currentAuthMode}`;
+
+    if (clientCache.has(cacheKey)) {
+        return clientCache.get(cacheKey)!;
+    }
     
     const options: GoogleGenAIOptions = {
-        apiVersion: GEMINI_API_VERSION as any
+        apiVersion: GEMINI_API_VERSION as any,
+        httpOptions: {
+            timeout: 30000 // 🚀 30s 全域逾時保護
+        }
     };
 
     if (apiKey || currentAuthMode === 'API') {
@@ -58,11 +35,13 @@ export function getAstraClient(apiKey?: string): AstraClient {
         }
         options.apiKey = key;
     } else {
-        // Vertex AI Fallback (GCP Mode)
+        // 🚀 Vertex AI Optimization (GCP Mode)
         options.vertexai = true;
         options.project = GCP_PROJECT;
-        options.location = 'us-central1';
+        options.location = process.env.GCP_LOCATION || 'us-central1';
     }
 
-    return new GoogleGenAI(options) as AstraClient;
+    const client = new GoogleGenAI(options);
+    clientCache.set(cacheKey, client);
+    return client;
 }

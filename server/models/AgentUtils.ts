@@ -25,11 +25,15 @@ export function dedupeModels(models: Array<string | undefined | null>): string[]
 }
 
 export function errorText(error: unknown): string {
-    if (error instanceof Error) return error.message;
+    if (error instanceof Error) {
+        // 🚀 Unified SDK Error Handling
+        const sdkErr = error as any;
+        if (sdkErr.status || sdkErr.statusCode) {
+            return `[HTTP_${sdkErr.status || sdkErr.statusCode}]: ${sdkErr.message}`;
+        }
+        return error.message;
+    }
     if (typeof error === 'object' && error !== null) {
-        const maybeError = error as { message?: unknown; error?: { message?: unknown } };
-        if (typeof maybeError.message === 'string') return maybeError.message;
-        if (maybeError.error && typeof maybeError.error.message === 'string') return maybeError.error.message;
         try {
             return JSON.stringify(error);
         } catch {
@@ -40,10 +44,12 @@ export function errorText(error: unknown): string {
 }
 
 export function extractStatusCode(message: string): number | undefined {
+    // Check for our custom prefix first
+    const httpMatch = message.match(/\[HTTP_(\d{3})\]/);
+    if (httpMatch) return Number(httpMatch[1]);
+
     const patterns = [
         /"code"\s*:\s*(\d{3})/i,
-        /\bHTTP_STATUS_(\d{3})\b/i,
-        /\bSTATUS_(\d{3})\b/i,
         /\bcode\s*[:=]\s*(\d{3})\b/i,
     ];
 

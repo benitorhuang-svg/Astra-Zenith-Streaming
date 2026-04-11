@@ -16,8 +16,10 @@ async function probe() {
         
         // 嘗試從 v1beta 獲取
         console.log('📡 嘗試端點: v1beta');
-        const models = await (client as any).listModels();
-        models.models.forEach(m => console.log(`[MODEL]: ${m.name}`));
+        const models = await client.models.list();
+        for await (const m of models) {
+            console.log(`[MODEL]: ${m.name}`);
+        }
         
     } catch (e: unknown) {
         const message = e instanceof Error ? e.message : String(e);

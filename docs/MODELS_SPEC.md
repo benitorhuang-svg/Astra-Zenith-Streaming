@@ -22,14 +22,18 @@
 ### 🧬 技術標準 (Unified SDK Standards)
 
 1.  **統一通訊協議**：
-    *   **SDK**: `@google/genai` (取代舊版 `@google/generative-ai`)。
+    *   **SDK**: `@google/genai` (v1.x Unified SDK)。
     *   **API 版本**: `v1beta` (支持最新多模態與 Grounding 功能)。
-    *   **併發控制**: 透過 `externalApiGate` 實作 4 個並行執行槽，極大化提升響應速度。
+    *   **併發控制**: 透過 `externalApiGate` 實作 4 個並行執行槽。
 
 2.  **上下文優化 (Gemini Cookbook 模式)**：
-    *   **Context Caching**: 針對超過 4096 tokens 的「基礎任務規格 (Base Mission Spec)」進行跨回合持久化緩存。
-    *   **File API**: 多模態資源 (圖片/PDF) 透過 `client.files.upload` 上傳，通訊時僅引用 `fileUri`，節省 90% 頻寬。
-    *   **結構化歷史**: 採用 JSON 陣列形式傳遞對話歷史，提升模型對角色分配的專注度。
+    *   **Context Caching**: 針對大規模任務規格進行跨回合持久化緩存 (`cachedContent`)。
+    *   **Multimodal RAG**: `VectorService` 支持存儲與檢索 `fileData` (圖片/PDF)，Agent 可直接感知多模態資源。
+    *   **File API**: 資源透過 `client.files.upload` 上傳，通訊時引用 `fileUri` 以節省頻寬。
+
+3.  **Grounding & 智慧工具**：
+    *   **A3 (Researcher)**: 預設掛載 `googleSearchRetrieval` 工具，具備實時互聯網檢索能力。
+    *   **Structured Output**: 核心決策 (A1, A6) 採用 `responseMimeType: 'application/json'` 確保邏輯穩定性。
 
 3.  **韌性與備援機制**：
     *   **一級備援**: `gemini-3.1-flash-lite-preview` (穩定 Worker)。

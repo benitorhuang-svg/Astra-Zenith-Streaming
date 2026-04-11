@@ -1,8 +1,8 @@
-export type VectorNodeType = 'ROOT' | 'BRANCH' | 'LEAF' | 'SUMMARY';
+export type VectorNodeType = 'ROOT' | 'BRANCH' | 'LEAF' | 'SUMMARY' | 'ADMIN' | 'SYSTEM';
 
 export interface VectorNode {
     id: string;
-    content: string;
+    content: string | any[];
     agentCode: string;
     vector: number[];
     x: number;

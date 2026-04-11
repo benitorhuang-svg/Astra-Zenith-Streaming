@@ -27,6 +27,7 @@ export class FileService {
             const client = getAstraClient(GEMINI_API_KEY);
             pushLog(`📤 [File_API] 正在上傳戰術資源: ${displayName}...`, 'warn');
 
+            // 🚀 SDK_NATIVE_FILE_UPLOAD (2026 Standard)
             const file = await client.files.upload({
                 file: filePath,
                 config: { displayName }
@@ -45,6 +46,17 @@ export class FileService {
             console.error('[FileService] Upload failed:', e);
             return null;
         }
+    }
+
+    /**
+     * Active resource cleanup to maintain governance
+     */
+    async deleteFile(name: string) {
+        try {
+            const client = getAstraClient(GEMINI_API_KEY);
+            await client.files.delete({ name });
+            pushLog(`🗑️ [File_API] 資源已主動釋放: ${name}`, 'info');
+        } catch { /* noop */ }
     }
 
     getFile(filePath: string): AstraFileMetadata | undefined {

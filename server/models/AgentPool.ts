@@ -26,8 +26,16 @@ export class AgentPoolManager {
             // Phase 3: Wisdom Enrichment (Gemini Cookbook Tools)
             let tools: any[] | undefined = undefined;
             if (a.id === 'A3') {
-                // Grounding with Google Search for Researcher
-                tools = [{ googleSearchRetrieval: {} }];
+                // 🚀 DYNAMIC_GROUNDING (2026 Unified SDK Standard)
+                // Use MODE_DYNAMIC to let the model decide when search is needed
+                tools = [{ 
+                    googleSearchRetrieval: { 
+                        dynamicRetrievalConfig: {
+                            mode: 'MODE_DYNAMIC',
+                            dynamicThreshold: 0.3 // 🚀 Optimized for factual sensitivity
+                        }
+                    } 
+                }];
             }
 
             const agent = new PersistentAgent(a.id, a.name, role, a.model, tools);

@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module": "CommonJS",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
-    "noImplicitAny": false,
     "resolveJsonModule": true,
-    "noEmit": true
+    "noEmit": false,
+    "outDir": "dist-server"
   },
   "include": ["src/**/*", "server/**/*"],
   "exclude": ["dist", "node_modules"]
