@@ -7,7 +7,7 @@ dotenv.config();
  */
 
 export let GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-export const GCP_PROJECT = process.env.GCP_PROJECT || 'web-sdk';
+export const GCP_PROJECT = process.env.GCP_PROJECT || 'web-sdk-chat';
 export const PORT = Number(process.env.PORT) || 3001;
 export const GOOGLE_DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID || ''; // 請將 Folder ID 放於環境變數中
 
