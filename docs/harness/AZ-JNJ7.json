@@ -1,0 +1,11 @@
+{
+  "missionId": "AZ-JNJ7",
+  "topic": "新手學習 sql 語法",
+  "variables": {},
+  "facts": [],
+  "scaffold": [],
+  "metrics": {
+    "agentScores": {},
+    "totalConflicts": 0
+  }
+}

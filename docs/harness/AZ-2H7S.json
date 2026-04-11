@@ -1,0 +1,11 @@
+{
+  "missionId": "AZ-2H7S",
+  "topic": "解說軟體業的Harness Engineering",
+  "variables": {},
+  "facts": [],
+  "scaffold": [],
+  "metrics": {
+    "agentScores": {},
+    "totalConflicts": 0
+  }
+}

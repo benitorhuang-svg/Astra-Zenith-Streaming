@@ -1,0 +1,11 @@
+{
+  "missionId": "AZ-4QYH",
+  "topic": "sql 語法 學習",
+  "variables": {},
+  "facts": [],
+  "scaffold": [],
+  "metrics": {
+    "agentScores": {},
+    "totalConflicts": 0
+  }
+}

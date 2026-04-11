@@ -115,6 +115,9 @@ export interface PortalContext {
     apiKey: string;
     billingTier: 'FREE' | 'PAID' | 'OFFLINE';
     pollingCycles: number;
+    harnessState?: any;
+    missionPoints?: any[];
+    blackboardScaffold?: string;
     scheduleRender: (mask: number) => void;
     pushInternalLog: (msg: string, type?: string) => void;
     setWelcomeError: (error: string) => void;

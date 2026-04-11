@@ -6,6 +6,7 @@ import type { N8NWorkflow } from '../../../integrations/n8n/n8n_data_types';
 import { AgentTaskRunner } from './AgentTaskRunner';
 import { WorkflowVisualizer } from './WorkflowVisualizer';
 import { WorkflowFlowManager } from './WorkflowFlowManager';
+import { MissionAPIService } from './MissionAPIService';
 
 /**
  * PortalWorkflowHandler — Orchestrates complex multi-agent flows and topological execution.
@@ -15,11 +16,13 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
     private runner: AgentTaskRunner;
     private visualizer: WorkflowVisualizer;
     private flowManager: WorkflowFlowManager;
+    private api: MissionAPIService;
 
     constructor(private context: PortalContext) {
         this.runner = new AgentTaskRunner(context);
         this.visualizer = new WorkflowVisualizer(context);
         this.flowManager = new WorkflowFlowManager(context);
+        this.api = new MissionAPIService();
         this.loadDefaultFlow();
     }
 
@@ -81,10 +84,34 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
         try {
             this.buildExecutionQueue();
             
+            // 🚀 HARNESS_INITIATION: Warm up the backend kernel before starting the agent loop
+            const participants = this.context.tableParticipants.filter((p): p is string => p !== null);
+            await this.api.initiateMission(
+                this.context.activePrompt,
+                participants,
+                this.context.pollingCycles,
+                this.context.apiKey,
+                [],
+                missionId,
+                this.context.harnessState
+            );
+
             while (this.context.executionQueue.length > 0) {
                 if (this.context.stopRequested) break;
                 
                 const task = this.context.executionQueue[0];
+                
+                // 🚀 DYNAMIC_MISSION_ALIGNMENT: Re-shard task focus based on A1's Scaffold
+                const missionPoints = (this.context as any).missionPoints;
+                if (missionPoints && missionPoints.length > 0 && task.agentCode !== 'A1') {
+                    const agentIndex = parseInt(task.agentCode!.replace('A', '')) || 0;
+                    const assignedPoint = missionPoints.find((p: any) => p.idCode === `P${agentIndex}`);
+                    if (assignedPoint) {
+                        task.focus = `[MISSION_LOCK]: 你被指派處理 A1 大綱中的 「${assignedPoint.idCode} | ${assignedPoint.fullTitle}」。請針對此點進行深度專業展開，嚴禁偏離標題。`;
+                        this.context.pushInternalLog(`[SYNC]: 代理人 ${task.agentCode} 任務已同步至 ${assignedPoint.idCode}`, 'INFO');
+                    }
+                }
+
                 this.context.currentPasses = task.round; // 🚀 TELEMETRY_JUMP: Update current round progress
                 activeArchive.status = `ACTIVE: ${task.agentCode}`;
                 this.context.scheduleRender(DIRTY_SIDEBAR);
@@ -97,7 +124,8 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
             }
 
             activeArchive.status = 'ARCHIVED';
-        } catch {
+        } catch (e) {
+            console.error('[Workflow] Mission Execution Failed:', e);
             activeArchive.status = 'MISSION_FAILED';
         } finally {
             this.context.isStreaming = false;
@@ -132,7 +160,21 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
         } else {
             for (let r = 1; r <= this.context.pollingCycles; r++) {
                 this.context.tableParticipants.filter(Boolean).forEach(agentCode => {
-                    this.context.executionQueue.push({ agentCode: agentCode!, round: r, focus: 'ANALYSIS' });
+                    let focus = 'ANALYSIS';
+                    
+                    // 🚀 TACTICAL_SHARDING: Map role descriptions to specific focus directives
+                    if (agentCode === 'A1') focus = '大規模檢索與徵兆同步';
+                    else if (agentCode === 'A2') focus = '模式識別與系統性比對';
+                    else if (agentCode === 'A3') focus = '邊緣數據動態與即時環境感知';
+                    else if (agentCode === 'A4') focus = '網絡結構重組與封包模擬';
+                    else if (agentCode === 'A5') focus = '衝突自動化排除協議';
+                    else if (agentCode === 'A6') focus = '預估多重變量下的風險概率與決策收斂';
+                    
+                    if (r > 1) focus = `基於上一輪發現進行深度 ${focus}`;
+                    
+                    this.context.executionQueue.push({ 
+                        agentCode: agentCode!, round: r, focus: focus 
+                    });
                 });
             }
         }

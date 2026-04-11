@@ -1,0 +1,47 @@
+graph TD
+    %% 1. 入口層
+    User([衛星戰術指揮官 / USER]) --> |輸入戰鬥指令| Portal[AZ_PORTAL 核心入口]
+    Portal --> |驗證模式| ModeSelection{作業模式選擇}
+    
+    %% 2. 模式分支
+    ModeSelection --> |Preview Mode| MockData[載入 MOCK_SCRIPTS 戰術劇本]
+    ModeSelection --> |Key Mode| API_Auth[API 金鑰驗證 & 層級偵測]
+    
+    %% 3. 核心執行引擎 (AgentTaskRunner)
+    API_Auth --> |啟動| A1[A1: COMMANDER 啟動]
+    MockData --> |啟動| A1
+    
+    %% 4. Scaffold-First 邏輯
+    subgraph Scaffold_Explosion [預測性佈局引擎]
+        A1 --> |"輸出 [STRATEGIC_MAP]"| ScaffoldParser[Scaffold 解析器]
+        ScaffoldParser --> |0.1s 內| GhostNodes[生成幽靈節點 / Ghost Nodes]
+        GhostNodes --> |預熱| UI_Mindmap[戰略路徑心智圖]
+    end
+    
+    %% 5. 跨代理人協同 (Blackboard & Sync)
+    A1 --> |寫入看板| Blackboard[(Blackboard 共享記憶體)]
+    A1 --> |內容流| StreamSync[流式映射 / Real-time Sync]
+    StreamSync --> |每 15 Tokens| UI_Mindmap
+    
+    subgraph Multi_Agent_Tactical_Group [特派員戰術群組]
+        Blackboard --> |讀取藍圖| A2_A5[A2-A5: 專業分工執行]
+        A2_A5 --> |自癒降級| FallbackTier{API 429/Timeout?}
+        FallbackTier --> |Yes| FlashGemma[切換至 Flash-Lite / Gemma 4]
+        FallbackTier --> |No| ProMatrix[Frontier 3.1 Pro 矩陣]
+        A2_A5 --> |數據防火牆| DQ_Firewall[NULL 陷阱提示注入]
+    end
+    
+    %% 6. 收斂與總結
+    A2_A5 --> |提交報告| SummaryNodes[SUMMARY 總結節點]
+    SummaryNodes --> |聚合觸發| A6[A6: MANAGER 戰略總監]
+    
+    A6 --> |全域向心力收斂| MasterNode{👑 戰略部署總部}
+    MasterNode --> |輸出結果| PDF_Export[高保真 PDF 戰術手冊]
+    MasterNode --> |完成| User
+    
+    %% 樣式美化
+    style A1 fill:#003366,stroke:#00ccff,stroke-width:4px,color:#fff
+    style A6 fill:#660000,stroke:#ff0000,stroke-width:4px,color:#fff
+    style MasterNode fill:#333,stroke:#ffd700,stroke-width:4px,color:#ffd700
+    style Blackboard fill:#222,stroke:#00ff00,stroke-dasharray: 5 5
+    style GhostNodes fill:#555,stroke-dasharray: 5 5,color:#aaa

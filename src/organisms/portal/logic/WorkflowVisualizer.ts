@@ -30,7 +30,12 @@ export class WorkflowVisualizer {
             const response = await fetch('/api/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
+                body: JSON.stringify({ 
+                    prompt,
+                    missionId: (this.context as any)._p.selectedArchiveId,
+                    harnessState: this.context.harnessState,
+                    apiKey: this.context.apiKey
+                })
             });
 
             if (!response.ok) throw new Error(`HTTP_STATUS_${response.status}`);

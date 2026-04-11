@@ -113,7 +113,8 @@ export class AZPortal extends HTMLElement {
             if (isFree) {
                 // FREE STRATEGY: Quota Optimization & Role Fit
                 switch(a.code) {
-                    case 'A1': case 'A4': model = 'gemma-4-it'; break; 
+                    case 'A1': model = 'gemini-3.1-flash-lite-preview'; break; 
+                    case 'A4': model = 'gemma-4-31b-it'; break; 
                     case 'A3': model = 'gemini-robotics-er-1.5-preview'; break;
                     case 'A6': model = 'gemini-3-flash-preview'; break; 
                     default: model = 'gemini-3.1-flash-lite-preview'; 

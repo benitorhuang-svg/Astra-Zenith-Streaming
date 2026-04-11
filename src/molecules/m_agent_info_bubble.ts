@@ -29,7 +29,7 @@ export function renderAgentInfoBubble(agentCode: string, activePrompt: string, s
     const specializedModels = [
         { id: "gemini-robotics-er-1.5-preview", name: "Robotics-ER 1.5" },
         { id: "gemma-4-31b-it", name: "Gemma 4 Standard (31B)" },
-        { id: "gemma-4-26b-it", name: "Gemma 4 Turbo (MoE)" }
+        { id: "gemma-4-26b-a4b-it", name: "Gemma 4 Turbo (MoE)" }
     ];
     
     const prompt = activePrompt || "[MISSION_COMMAND_PENDING]";

@@ -9,7 +9,7 @@ export interface GraphNode {
     agentCode: string; 
     x: number; y: number; 
     tx: number; ty: number; 
-    type: 'ROOT' | 'BRANCH' | 'LEAF'; 
+    type: 'ROOT' | 'BRANCH' | 'LEAF' | 'DETAIL'; 
     title?: string;
     agentColor?: string;
     content?: string;
@@ -83,16 +83,27 @@ export class SemanticGraph extends HTMLElement {
             let tx = centerX, ty = rootY;
             if (n.type === 'BRANCH') {
                 const branches = data.nodes.filter(b => b.type === 'BRANCH');
-                tx = centerX + (branches.indexOf(n) - (branches.length - 1) / 2) * 310; 
-                ty = rootY + 140;
+                const spacing = Math.min(260, 1000 / (branches.length || 1));
+                tx = centerX + (branches.indexOf(n) - (branches.length - 1) / 2) * spacing; 
+                ty = rootY + 110;
             } else if (n.type === 'LEAF') {
                 const pLink = data.links.find(l => l.target === n.id);
                 const pNode = data.nodes.find(pn => pn.id === pLink?.source);
                 if (pNode) {
                     const branches = data.nodes.filter(b => b.type === 'BRANCH');
+                    const bIndex = branches.indexOf(pNode);
+                    const bSpacing = Math.min(260, 1000 / (branches.length || 1));
                     const siblings = data.nodes.filter(s => s.type === 'LEAF' && data.links.some(l => l.source === pNode.id && l.target === s.id));
-                    tx = centerX + (branches.indexOf(pNode) - (branches.length - 1) / 2) * 310;
-                    ty = rootY + 140 + 80 + (siblings.indexOf(n) * 42);
+                    tx = centerX + (bIndex - (branches.length - 1) / 2) * bSpacing;
+                    ty = rootY + 110 + 60 + (siblings.indexOf(n) * 38);
+                }
+            } else if (n.type === 'DETAIL') {
+                const pLink = data.links.find(l => l.target === n.id);
+                const pNode = data.nodes.find(pn => pn.id === pLink?.source);
+                if (pNode) {
+                    tx = pNode.tx + 45; // Horizontal offset for details
+                    const siblings = data.nodes.filter(s => s.type === 'DETAIL' && data.links.some(l => l.source === pNode.id && l.target === s.id));
+                    ty = pNode.ty + 20 + (siblings.indexOf(n) * 22);
                 }
             }
             if (old) return { ...old, ...n, tx, ty, agentColor: color };
@@ -134,6 +145,8 @@ export class SemanticGraph extends HTMLElement {
             g.innerHTML = `<rect x="-75" y="-16" width="150" height="32" fill="#050505" stroke="${color}" stroke-width="1" />
                 <rect x="-75" y="-16" width="150" height="3" fill="${color}" />
                 <text text-anchor="middle" dy="6" fill="${color}" font-size="9.5" font-family="sans-serif" font-weight="900" class="uppercase tracking-widest">${n.title}</text>`;
+        } else if (n.type === 'DETAIL') {
+            g.innerHTML = `<rect x="0" y="-8" width="4" height="1" fill="${color}" opacity="0.4" /><text dx="8" dy="2" fill="#fff" font-size="8" font-family="monospace" opacity="0.4" italic>${n.title}</text>`;
         } else {
             g.innerHTML = `<circle cx="0" cy="0" r="2.5" fill="${color}" opacity="0.4" /><text dx="10" dy="4" fill="#fff" font-size="9" font-family="monospace" opacity="0.6">${n.title}</text>`;
         }
@@ -150,7 +163,8 @@ export class SemanticGraph extends HTMLElement {
                 const n1 = this.nodes.find(n => n.id === l.source), n2 = this.nodes.find(n => n.id === l.target);
                 if (el && n1 && n2) {
                     const color = n1.agentColor || n2.agentColor || '#ffffff';
-                    const d = `M ${n1.x} ${n1.y + (n1.type==='ROOT'?22:16)} L ${n1.x} ${n1.y + (n1.type==='ROOT'?32:24)} L ${n2.x} ${n1.y + (n1.type==='ROOT'?32:24)} L ${n2.x} ${n2.y - 16}`;
+                    // 🚀 TACTICAL_CURVE: Use straight or smooth lines instead of stiff orthogonal paths
+                    const d = `M ${n1.x} ${n1.y + (n1.type==='ROOT'?22:16)} L ${n2.x} ${n2.y - 12}`;
                     el.setAttribute('d', d); el.setAttribute('stroke', color);
                 }
             });

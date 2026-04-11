@@ -75,11 +75,11 @@ export class AgentPoolManager {
         return check || content;
     }
 
-    async sendMessage(id: string, messages: StreamMessage[], onChunk: (chunk: string) => void, apiKey?: string, cachedContent?: string) {
+    async sendMessage(id: string, messages: StreamMessage[], onChunk: (chunk: string) => void, apiKey?: string, cachedContent?: string, overrideModel?: string) {
         const agent = this.agents.get(id);
         if (!agent) throw new Error(`代理 ${id} 未掛載`);
         if (cachedContent) (messages as any).cachedContent = cachedContent;
-        return await agent.streamMessage(messages, onChunk, apiKey);
+        return await agent.streamMessage(messages, onChunk, apiKey, overrideModel);
     }
 }
 

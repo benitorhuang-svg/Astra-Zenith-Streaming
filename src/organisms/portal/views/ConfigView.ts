@@ -88,7 +88,7 @@ export function renderConfigView(availableModels: string[], currentConfig: Agent
                         <h4 class="text-warning font-black uppercase text-xs tracking-wider mb-1">注意！模型配置限制</h4>
                         <p class="text-[11px] font-mono text-warning/60 leading-relaxed">
                             FREE 層級要求限制為 1,500 RPD。若為多代理人同時運作，請謹慎選擇 Flash-Lite 系列以節省配額。
-                            PRO 層級金鑰可解鎖 Gemini-2.0-Pro 深度推理模型。
+                            PRO 層級金鑰可解鎖 Frontier 3.1 Pro 深度推理模型。
                         </p>
                     </div>
                 </div>

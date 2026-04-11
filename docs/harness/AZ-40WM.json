@@ -1,0 +1,11 @@
+{
+  "missionId": "AZ-40WM",
+  "topic": "解說 Harness Engineering",
+  "variables": {},
+  "facts": [],
+  "scaffold": [],
+  "metrics": {
+    "agentScores": {},
+    "totalConflicts": 0
+  }
+}

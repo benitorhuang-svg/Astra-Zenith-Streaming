@@ -325,11 +325,23 @@ export class AZPortalInteractionHandler {
     }
 
     public onDelegatedKeyDown(e: KeyboardEvent): void {
-        if (e.key === 'Enter' && !this.context.isStreaming) {
-            const focused = document.activeElement;
-            if (focused && (focused.id === 'u-mission-input' || focused.tagName === 'TEXTAREA')) {
-                e.preventDefault();
+        const target = e.target as HTMLElement;
+        const isInput = target && (target.id === 'u-mission-input' || target.id === 'u-task-input' || target.tagName === 'TEXTAREA');
+
+        if (e.key === 'Enter' && isInput && !this.context.isStreaming) {
+            // Support Shift+Enter for newline in textareas, but Enter triggers flow
+            if (e.shiftKey && target.tagName === 'TEXTAREA') return;
+
+            e.preventDefault();
+            
+            // Final Sync of Value before execution
+            const value = (target as HTMLInputElement | HTMLTextAreaElement).value;
+            this.context.activePrompt = value;
+            this.context._p.activePrompt = value;
+
+            if (value.trim().length > 0) {
                 void this.context.workflow?.handleRunFlow();
+                (target as HTMLInputElement).value = '';
             }
         }
     }
