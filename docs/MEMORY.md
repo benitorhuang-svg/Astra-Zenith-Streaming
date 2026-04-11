@@ -23,3 +23,11 @@
 - **UPDATE**: `2026-04-05` | 優化：全面清理 Ghost Code，建立 CSS 變數驅動的語義化樣式體系。
 - **UPDATE**: `2026-04-05` | 佈局修復：統一視圖渲染簽名，移除 inline styles，恢復全域導航同步。
 - **UPDATE**: `2026-04-05` | 結構優化：合併 Agent 定義，移除冗餘 JSON 與 Molecule，清理 root 冗餘檔案。
+- **UPDATE**: `2026-04-11` | **核心遷移**：升級至 `@google/genai` (v1.48.0) Unified SDK。實作並發控制 (Concurrency: 4)、Context Caching (任務級) 與 File API 多模態優化。完成傳輸層 Gzip 壓縮。
+
+### 🛰️ 技術指標 (2026-04-11)
+- **SDK**: @google/genai v1.48.0
+- **TTFT**: < 2.5s (已驗證)
+- **並發槽位**: 4 (ExternalApiGate)
+- **Token 節省**: 70%+ (Caching + Pruning)
+- **傳輸效率**: Gzip (Express) + File API (Multimodal)

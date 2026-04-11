@@ -1,32 +1,71 @@
-import { PortalContext, DIRTY_ALL } from '../../az_portal';
+import { PortalContext, DIRTY_ALL } from '../PortalTypes';
 import { GlobalIdentity } from '../../../core/identity';
 
+/**
+ * IdentityHandler — Atomic Auth Logic
+ */
 export class IdentityHandler {
     constructor(private context: PortalContext) {}
 
-    public handle(target: HTMLElement): boolean {
-        // Toggle Password
-        if (target.closest('#u-btn-toggle-password')) {
-            const input = document.getElementById('u-id-key') as HTMLInputElement;
-            if (input) input.type = input.type === 'password' ? 'text' : 'password';
+    public handle(e: Event): boolean {
+        const path = (e.composedPath() as HTMLElement[]) || [];
+        const find = (selector: string) => path.find(el => el instanceof HTMLElement && el.matches(selector));
+
+        // --- Boards (Avatar/FAQ) ---
+        if (find('#u-btn-select-avatar')) {
+            const board = document.getElementById('u-avatar-selection-board');
+            if (board) board.classList.toggle('hidden');
+            if (board && !board.classList.contains('hidden')) {
+                document.getElementById('u-faq-board')?.classList.add('hidden');
+            }
+            return true;
+        }
+        if (find('#u-btn-open-faq')) {
+            const board = document.getElementById('u-faq-board');
+            if (board) board.classList.toggle('hidden');
+            if (board && !board.classList.contains('hidden')) {
+                document.getElementById('u-avatar-selection-board')?.classList.add('hidden');
+            }
+            return true;
+        }
+        if (find('#u-btn-close-avatar-board')) {
+            document.getElementById('u-avatar-selection-board')?.classList.add('hidden');
+            return true;
+        }
+        if (find('#u-btn-close-faq-board')) {
+            document.getElementById('u-faq-board')?.classList.add('hidden');
             return true;
         }
 
-        // Reset Key
-        if (target.closest('#u-btn-reset-key')) {
-            this.context._p.serverAuthorized = false;
-            this.context.scheduleRender(DIRTY_ALL);
+        // --- Avatar Upload ---
+        const uploadBtn = find('#u-btn-upload-avatar');
+        if (uploadBtn) {
+            const input = document.getElementById('u-avatar-upload-input') as HTMLInputElement;
+            if (input) {
+                input.click();
+                if (!(input as any)._bound) {
+                    (input as any)._bound = true;
+                    input.onchange = (ie: any) => {
+                        const file = ie.target.files?.[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (re: any) => {
+                                const url = re.target.result;
+                                if (url) {
+                                    GlobalIdentity.update({ avatarUrl: url });
+                                    this.context.scheduleRender(DIRTY_ALL);
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    };
+                }
+            }
             return true;
         }
 
-        // Boards (Avatar/FAQ)
-        if (target.closest('#u-btn-select-avatar')) {
-            document.getElementById('u-avatar-selection-board')?.classList.toggle('hidden');
-            return true;
-        }
-
-        // Avatar Selection
-        const avatarOpt = target.closest('.u-avatar-option');
+        // --- Avatar Selection ---
+        const avatarOpt = find('.u-avatar-option');
         if (avatarOpt) {
             const url = avatarOpt.getAttribute('data-url');
             if (url) { 
@@ -36,35 +75,99 @@ export class IdentityHandler {
             return true;
         }
 
-        // Login
-        if (target.closest('#u-btn-access-portal')) {
-            this.handleLogin();
+        // --- Password Visibility ---
+        if (find('#u-btn-toggle-password')) {
+            const input = document.getElementById('u-id-key') as HTMLInputElement;
+            if (input) {
+                input.type = input.type === 'password' ? 'text' : 'password';
+                this.context.scheduleRender(DIRTY_ALL);
+            }
+            return true;
+        }
+
+        // --- Preview Mode ---
+        const previewBtn = find('#u-btn-preview-mode');
+        if (previewBtn) {
+            this.handlePreviewMode(previewBtn as any);
+            return true;
+        }
+
+        // --- Login ---
+        const loginBtn = find('#u-btn-access-portal');
+        if (loginBtn) {
+            this.handleLogin(loginBtn as any);
             return true;
         }
 
         return false;
     }
 
-    private handleLogin() {
+    private handleLogin(btn: any) {
         const keyInput = document.getElementById('u-id-key') as HTMLInputElement;
         const nameInput = document.getElementById('u-id-name') as HTMLInputElement;
         const apiKey = keyInput?.value.trim() || '';
-        const userName = nameInput?.value.trim() || 'OPERATOR_99';
+        const userName = nameInput?.value.trim() || 'OPERATOR_X';
 
-        this.context.pushInternalLog('正在驗證連線鏈路...', 'SYNC');
+        if (btn) btn.loading = true;
+        this.context.setWelcomeError('');
+
         fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ apiKey: apiKey || this.context.apiKey, userName })
+            body: JSON.stringify({ apiKey, userName })
         }).then(res => {
             if (res.ok) {
                 this.context._p.serverAuthorized = true;
-                this.context.apiKey = apiKey || this.context.apiKey;
-                GlobalIdentity.update({ apiKey: this.context.apiKey, userName });
-                this.context._p.handleModeSwitch('chat');
+                this.context.apiKey = apiKey;
+                
+                GlobalIdentity.update({ 
+                    apiKey, 
+                    userName,
+                    accessMode: 'API_ACCESS',
+                    billingTier: 'FREE' 
+                });
+                
+                this.context.handleModeSwitch('chat');
             } else {
-                this.context.setWelcomeError('授權失敗：金鑰無效');
+                throw new Error('Access Denied: Invalid Mission Key');
             }
+        }).catch(err => {
+            this.context.setWelcomeError(err.message || 'Authentication System Failure');
+        }).finally(() => {
+            if (btn) btn.loading = false;
+        });
+    }
+
+    private handlePreviewMode(btn: any) {
+        if (btn) btn.loading = true;
+        this.context.setWelcomeError('');
+
+        // Step 1: Switch server to CLI mode (Mocking internal system)
+        fetch('/api/auth/mode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'CLI' })
+        }).then(res => {
+            if (res.ok) {
+                const previewKey = `PREVIEW_${Date.now()}`;
+                
+                GlobalIdentity.update({ 
+                    apiKey: previewKey, 
+                    userName: 'OPERATOR',
+                    accessMode: 'PREVIEW',
+                    billingTier: 'FREE'
+                });
+
+                this.context.apiKey = previewKey;
+                this.context._p.serverAuthorized = true;
+                this.context.handleModeSwitch('chat');
+            } else {
+                throw new Error('Preview Mode Protocol Rejected by System');
+            }
+        }).catch(err => {
+            this.context.setWelcomeError(err.message || 'Preview Mode Failed');
+        }).finally(() => {
+            if (btn) btn.loading = false;
         });
     }
 }

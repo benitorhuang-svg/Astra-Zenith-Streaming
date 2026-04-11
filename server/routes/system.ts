@@ -83,8 +83,8 @@ router.post('/auth/verify', async (req, res) => {
             const client = getAstraClient(apiKey);
 
             // 🛰️ MODEL_DISCOVERY: Search for available models to determine Tier
-            const modelList = await client.listModels();
-            const modelNames = modelList.models.map(model => model.name);
+            const modelList = await client.models.list();
+            const modelNames = (modelList as any).data.map((model: any) => model.name || "");
             const isPaid = modelNames.some(name => /pro|ultra/i.test(name));
 
             // 🧠 TIER-AWARE OPTIMIZATION: Dynamically upgrade AGENT_OS_CONFIG

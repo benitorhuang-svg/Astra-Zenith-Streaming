@@ -1,7 +1,9 @@
-import { PortalContext, DIRTY_ALL } from '../../az_portal';
+import { PortalContext, DIRTY_ALL } from '../PortalTypes';
 import { createAgentPath } from '../../../core/agents';
-import type { PortalArchive } from '../PortalTypes';
 
+/**
+ * WorkflowVisualizer — Integration with generative media systems (Imagen 4.0).
+ */
 export class WorkflowVisualizer {
     constructor(private context: PortalContext) {}
 
@@ -9,7 +11,7 @@ export class WorkflowVisualizer {
         const generationId = `IMG-${Date.now().toString(36).toUpperCase()}`;
         this.context.isStreaming = true;
         
-        const placeholder: PortalArchive = {
+        const placeholder: any = {
             id: generationId,
             time: new Date().toLocaleTimeString(),
             mission: 'SYNTHESIS_HUB',

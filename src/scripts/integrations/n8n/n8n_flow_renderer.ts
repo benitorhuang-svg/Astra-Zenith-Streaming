@@ -36,22 +36,22 @@ const renderFluxPath = (d: string, isCoreAxis: boolean) => `
     
     <!-- 2. TACTICAL PULSE -->
     <path d="${d}" fill="none" stroke="#F8FAFC" 
-          stroke-width="${isCoreAxis ? 4.5 : 2.2}" 
-          opacity="${isCoreAxis ? 1 : 0.6}" 
-          stroke-dasharray="${isCoreAxis ? '100,200' : '60,180'}" 
+          stroke-width="2.5" 
+          opacity="0.8" 
+          stroke-dasharray="150,450" 
           filter="url(#silverGlow)">
-        <animate attributeName="stroke-dashoffset" from="${isCoreAxis ? 300 : 240}" to="0" 
-                 dur="${isCoreAxis ? '1.2s' : '2.4s'}" repeatCount="indefinite" />
+        <animate attributeName="stroke-dashoffset" from="600" to="0" 
+                 dur="7.5s" repeatCount="indefinite" />
     </path>
 
     ${isCoreAxis ? `
         <!-- 3. PLASMA CORE SURGE (The Master Current) -->
-        <path d="${d}" fill="none" stroke="white" stroke-width="3.0" opacity="0.8" 
-              stroke-dasharray="20,280" filter="url(#coreSurge)">
-            <animate attributeName="stroke-dashoffset" from="300" to="0" dur="0.6s" repeatCount="indefinite" />
+        <path d="${d}" fill="none" stroke="white" stroke-width="3.5" opacity="0.4" 
+              stroke-dasharray="100,500" filter="url(#coreSurge)">
+            <animate attributeName="stroke-dashoffset" from="600" to="0" dur="7.5s" repeatCount="indefinite" />
         </path>
-        <path d="${d}" fill="none" stroke="white" stroke-width="0.5" opacity="1">
-            <animate attributeName="opacity" values="1;0.2;1" dur="0.08s" repeatCount="indefinite" />
+        <path d="${d}" fill="none" stroke="white" stroke-width="0.8" opacity="0.6">
+            <animate attributeName="opacity" values="0.6;0.2;0.6" dur="0.6s" repeatCount="indefinite" />
         </path>
     ` : ''}
 `;
@@ -88,7 +88,7 @@ export const renderN8NFlowChart = (topology: 'linear' | 'orbital' | 'custom' = '
     } else if (topology === 'custom') {
         result = n8nFlow?.nodes.length ? renderN8NFlow(n8nFlow) : `<div class="u-topology-base u-topology-custom"></div>`;
     } else {
-        const nodes = [150, 350, 550, 750, 950, 1150].map(x => ({ x, y: 300 }));
+        const nodes = [150, 350, 550, 750, 950, 1150].map(x => ({ x, y: 290 }));
         result = `
             <div class="u-topology-base u-topology-linear">
                 <svg class="absolute inset-0 w-full h-full" viewBox="0 0 1300 600">
@@ -96,8 +96,13 @@ export const renderN8NFlowChart = (topology: 'linear' | 'orbital' | 'custom' = '
                     ${nodes.map((n, i) => {
                         if (i === nodes.length - 1) return '';
                         const d = `M${n.x},${n.y} L${nodes[i+1].x},${nodes[i+1].y}`;
-                        return renderFluxPath(d, true); // Linear mode all core-intensity
+                        return renderFluxPath(d, true); 
                     }).join('')}
+
+                    <!-- HIGH-FIDELITY LINEAR NODES -->
+                    ${nodes.map(n => `
+                        <circle cx="${n.x}" cy="${n.y}" r="4" fill="white" filter="url(#silverGlow)" />
+                    `).join('')}
                 </svg>
                 ${['INPUT', 'ANALYSIS', 'LOGIC', 'SYNTHESIS', 'REFINER', 'OUTPUT'].map((label, i) => `
                     <div class="absolute flex flex-col items-center -translate-x-1/2" style="left: ${nodes[i].x}px; top: 180px;">

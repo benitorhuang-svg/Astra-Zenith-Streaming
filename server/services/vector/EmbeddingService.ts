@@ -19,13 +19,13 @@ export class EmbeddingService {
                 try {
                     const contentParts = Array.isArray(input) ? input : [{ text: input }];
 
-                    const result = await (client as any).models.embedContent({
+                    const result = await client.models.embedContent({
                         model: modelName,
-                        content: { parts: contentParts },
+                        contents: [{ parts: contentParts }],
                         config: { outputDimensionality: 768 }
                     });
 
-                    let vector = result.embedding?.values ?? result.embeddings?.[0]?.values ?? [];
+                    let vector = result.embeddings?.[0]?.values ?? result.embedding?.values ?? [];
 
                     // Manual Normalization for truncated vectors (MRL Standard)
                     if (isPaidTier && vector.length > 0) {
@@ -40,12 +40,12 @@ export class EmbeddingService {
                     console.warn(`[EmbeddingService] Primary model failed: ${modelName}`, error);
                     // Fallback to stable 004
                     const fallbackText = Array.isArray(input) ? (input[0] as any).text : input;
-                    const res = await (client as any).models.embedContent({
+                    const res = await client.models.embedContent({
                         model: 'text-embedding-004',
-                        content: { parts: [{ text: fallbackText }] },
+                        contents: [{ parts: [{ text: fallbackText }] }],
                         config: { outputDimensionality: 768 }
                     });
-                    return res.embedding?.values ?? res.embeddings?.[0]?.values ?? new Array(768).fill(0);
+                    return res.embeddings?.[0]?.values ?? res.embedding?.values ?? new Array(768).fill(0);
                 }
             });
         } catch (e) {

@@ -1,26 +1,39 @@
+import type { AgentPath } from '../../core/types';
+
 /**
- * AZ PORTAL TYPES — Shared Communication Contracts
+ * PortalTypes — Architectural Decoupling
+ * Breaks circular dependencies between Portal, Logic Handlers, and UI Fragments.
  */
 
-import type { AgentPath, AZAgentEvent, MissionMessage, TelemetrySnapshot } from '../../core/types';
-import type { N8NWorkflow } from '../../integrations/n8n/n8n_data_types';
+export type PortalView = 'chat' | 'decision-tree' | 'archive' | 'logs' | 'table';
+export type PortalTopology = 'linear' | 'orbital' | 'custom';
 
-export type PortalMessage = MissionMessage;
+export const DIRTY_SIDEBAR = 1 << 0;
+export const DIRTY_CONTENT = 1 << 1;
+export const DIRTY_WELCOME = 1 << 2;
+export const DIRTY_ALL = DIRTY_SIDEBAR | DIRTY_CONTENT | DIRTY_WELCOME;
 
-export type ChatMessage = PortalMessage;
+export interface LogEntry {
+    message: string;
+    type: string;
+    timestamp: string;
+    path?: string[];
+}
 
-export interface PortalArchive {
-    id: string;
-    time: string;
-    mission: string;
-    title: string;
-    status: string;
-    size?: string;
-    messages?: PortalMessage[];
-    isGenerating?: boolean;
+export interface ChatMessage {
+    agentCode: string;
+    agentName: string;
+    agentColor: string;
+    agentImg: string;
+    content: string;
+    round: number;
+    isStreaming: boolean; // Keep required for UI stability
+    nodeName?: string;
+    path?: AgentPath;
+    reasoning?: string;
+    summary?: string;
     isImage?: boolean;
-    imageUrl?: string | null;
-    error?: string;
+    imageUrl?: string;
 }
 
 export interface PortalExecutionTask {
@@ -31,41 +44,88 @@ export interface PortalExecutionTask {
 }
 
 export interface PortalWorkflowController {
-    n8nFlow: N8NWorkflow | null;
-    handleRunFlow(): Promise<void>;
-    handleAddNode(): void;
-    addSuccessorNode(fromNodeName: string): void;
-    importFlow(json: string): Promise<void>;
-    handleVisualize(prompt: string): Promise<void>;
+    n8nFlow: any | null;
+    handleRunFlow: () => Promise<void>;
+    handleAddNode: () => void;
+    addSuccessorNode: (fromNodeName: string) => void;
+    importFlow: (json: string) => Promise<void>;
+    handleVisualize: (prompt: string) => Promise<void>;
 }
-
-export interface LogEntry {
-    timestamp: string;
-    type: string;
-    message: string;
-    path?: AgentPath;
-    agentCode?: string;
-}
-
-export type MissionStreamEvent = AZAgentEvent<string>;
-
-export interface PortalTelemetry extends TelemetrySnapshot {
-    cacheHitRate?: number;
-    searchCalls?: number;
-    estimatedSavings?: number;
-}
-
-export type PortalView =
-    | 'welcome'
-    | 'chat'
-    | 'decision-tree'
-    | 'archive'
-    | 'logs'
-    | 'table';
 
 export interface PortalAuditRecord {
+    id: string;
     timestamp: string;
-    type: string;
+    system: string;
+    module: string;
+    event: 'SYNC' | 'INFO' | 'WARNING' | 'ERROR' | 'TRACE' | 'ACCESS' | 'USER';
     message: string;
-    path?: AgentPath;
+    status: 'success' | 'fail' | 'warn' | 'wait';
+}
+
+export interface PortalArchive {
+    id: string;
+    title: string;
+    date?: string;
+    time?: string;
+    type?: string;
+    mission?: string;
+    status?: string;
+    size?: string;
+    tags?: string[];
+    isImage?: boolean;
+    isGenerating?: boolean;
+    content?: string;
+    previewUrl?: string;
+    imageUrl?: string | null;
+    messages?: ChatMessage[];
+}
+
+export interface PortalTelemetry {
+    peakThroughput: string;
+    activeNodes: number;
+    latency: string;
+    uptime: string;
+    cacheHitRate?: number;
+    searchCalls?: number;
+    estimatedSavings?: string;
+    tokenCount: number;
+    activeAgentCode?: string | null;
+    activeAgentCount?: number;
+    currentView: string;
+    currentPasses?: number;
+    pollingCycles?: number;
+    logCount: number;
+    lastPath: string[];
+    tokenBudget: number;
+    queueDepth?: number;
+    isCompacting?: boolean;
+}
+
+export interface PortalContext {
+    messages: ChatMessage[];
+    archives: PortalArchive[];
+    currentView: PortalView | 'welcome';
+    activePrompt: string;
+    currentPasses: number;
+    currentTopology: PortalTopology;
+    tableParticipants: (string | null)[];
+    isStreaming: boolean;
+    agentPool: any[];
+    executionQueue: PortalExecutionTask[];
+    apiKey: string;
+    pollingCycles: number;
+    scheduleRender: (mask: number) => void;
+    pushInternalLog: (msg: string, type?: string) => void;
+    setWelcomeError: (error: string) => void;
+    workflow: PortalWorkflowController | null;
+    stopRequested: boolean;
+    stopFlow: () => void;
+    updateStreamingChunk: (agent: any, chunk: string) => void;
+    handleModeSwitch: (view: PortalView | 'welcome') => void;
+    handleTopologySwitch: (type: PortalTopology) => void;
+    _p: any;
+    activeDrag?: any | null;
+    serverMode?: string;
+    n8nFlow?: any;
+    telemetryState?: PortalTelemetry;
 }

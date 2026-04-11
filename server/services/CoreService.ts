@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { pushLog } from './LogService';
+import { fileService } from './FileService';
 
 /**
  * CORE SERVICE — Memory, Knowledge and Transcripts
@@ -76,7 +77,7 @@ export function getLocalKnowledgeContext(): string {
 }
 
 /**
- * 🛰️ MULTIMODAL SYNC: Ingest images/PDFs into Vector Graph
+ * 🛰️ MULTIMODAL SYNC: Ingest images/PDFs into Vector Graph (Optimized via File API)
  */
 export async function syncMultimodalKnowledge(vectorService: any) {
     const baseDir = process.cwd();
@@ -87,16 +88,16 @@ export async function syncMultimodalKnowledge(vectorService: any) {
         const stats = fs.statSync(filePath);
         if (stats.size > 20 * 1024 * 1024) continue; // Skip files > 20MB
 
-        const ext = path.extname(file).toLowerCase();
-        const mimeType = ext === '.pdf' ? 'application/pdf' : `image/${ext.replace('.', '')}`;
-        const data = fs.readFileSync(filePath).toString('base64');
-
-        const parts = [
-            { text: `[Multimodal Knowledge Source: ${file}]` },
-            { inlineData: { mimeType, data } }
-        ];
-
         try {
+            // Optimization: Use File API for efficient transport
+            const fileMeta = await fileService.uploadFile(filePath, `AZ_Asset_${file}`);
+            if (!fileMeta) continue;
+
+            const parts = [
+                { text: `[Multimodal Knowledge Source: ${file}]` },
+                { fileData: { mimeType: fileMeta.mimeType, fileUri: fileMeta.fileUri } }
+            ];
+
             await vectorService.addNode(`file-${file}-${stats.mtimeMs}`, parts, 'ADMIN');
         } catch (e) {
             console.error(`[MultimodalSync] Failed for ${file}:`, e);

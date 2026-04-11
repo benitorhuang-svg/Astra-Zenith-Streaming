@@ -53,4 +53,4 @@ export class ExternalApiGate {
   }
 }
 
-export const externalApiGate = new ExternalApiGate(1);
+export const externalApiGate = new ExternalApiGate(4);

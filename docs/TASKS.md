@@ -15,9 +15,12 @@
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 確認 Vite 6 + Tailwind v4 建置正常 (`npm run build`)
-- [ ] T002 [P] 確認 TypeScript 型別檢查通過 (`npm run type-check`)
-- [ ] T003 [P] 確認 `.az_core/` 持久化結構完整 (AGENT_STATE.json, MEMORY.md)
+- [x] T001 確認 Vite 6 + Tailwind v4 建置正常 (`npm run build`)
+- [x] T002 [P] 確認 TypeScript 型別檢查通過 (`npm run type-check`)
+- [x] T003 [P] 確認 `.az_core/` 持久化結構完整 (AGENT_STATE.json, MEMORY.md)
+- [x] T040 遷移至 @google/genai Unified SDK (v1.48.0)
+- [x] T041 實作 Express 傳輸層壓縮 (Gzip/Brotli)
+- [x] T042 實作並發 Gate 優化 (Concurrency: 4)
 
 ---
 
@@ -25,14 +28,16 @@
 
 **Purpose**: 核心基礎設施，所有 User Story 依賴此階段完成
 
-- [ ] T004 建立 `src/scripts/core/types.ts` — 定義 AZAgentEvent, Mission, Session 型別
-- [ ] T005 建立 `src/scripts/core/middleware.ts` — Middleware Pipeline 基礎架構
+- [x] T004 建立 `src/scripts/core/types.ts` — 定義 AZAgentEvent, Mission, Session 型別
+- [x] T005 建立 `src/scripts/core/middleware.ts` — Middleware Pipeline 基礎架構
+- [x] T043 實作 Context Caching (Paid Tier 穩定緩存)
+- [x] T044 實作 File API 優化 (多模態資源 URI 引用)
 - [ ] T006 [P] 實作 `withRetry` 中間件 — 指數退避 + 隨機抖動 (Jitter)
-- [ ] T007 [P] 實作 `withTokenGuard` 中間件 — 兩階段壓縮 (Pruning → Summarization)
+- [x] T007 [P] 實作 `withTokenGuard` 中間件 — 兩階段壓縮 (Pruning + Pruning Logic)
 - [ ] T008 [P] 實作 `withTurnTracking` 中間件 — 對話輪次限制
 - [ ] T009 [P] 實作 `withAuditLog` 中間件 — 全鏈路追蹤寫入 .az_core
-- [ ] T010 在 `az_portal_types.ts` 中擴展 AgentEvent 加入 `path: string[]`
-- [ ] T011 實作 Zod Schema 校驗層 — 所有入站 Payload 驗證
+- [x] T010 在 `az_portal_types.ts` 中擴展 AgentEvent 加入 `path: string[]`
+- [x] T011 實作 Zod Schema 校驗層 — 所有入站 Payload 驗證
 
 **Checkpoint**: Foundation ready — User Story 實作可以開始
 

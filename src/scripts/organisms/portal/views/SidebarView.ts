@@ -7,8 +7,14 @@ import type { Agent } from '../../../core/agents';
 
 export function renderSidebar(workingAgents: Agent[], currentTopology: 'linear' | 'orbital' | 'custom' = 'linear', executionQueue: Array<{ agentCode: string }> = [], tableParticipants: (string | null)[] = []): string {
     // INDUSTRIAL FIX: Only show agents that are currently "seated" (mounted on tableParticipants)
-    const activeCodes = tableParticipants.filter(code => code !== null) as string[];
-    const displayedAgents = workingAgents.filter(agent => activeCodes.includes(agent.code));
+    // INDUSTRIAL FIX: In Custom mode, only show the ONE agent present in the main workspace
+    let displayedAgents = tableParticipants
+        .map(code => workingAgents.find(a => a.code === code))
+        .filter(agent => agent !== undefined) as Agent[];
+
+    if (currentTopology === 'custom' && displayedAgents.length > 0) {
+        displayedAgents = [displayedAgents[0]];
+    }
 
     return `
         <div class="flex flex-col h-full bg-black/50 border-r border-white/5 relative shadow-inner w-full">
@@ -33,7 +39,7 @@ export function renderSidebar(workingAgents: Agent[], currentTopology: 'linear' 
                     const statusColor = isProcessing ? 'bg-primary' : (isQueued ? 'bg-white/40' : 'bg-white/10');
 
                     return `
-                        <div class="u-agent-pool-item w-14 h-14 p-0.5 bg-white/3 border ${isProcessing ? 'border-primary shadow-[0_0_15px_rgba(0,255,204,0.3)]' : 'border-white/10'} rounded-xs hover:border-primary/40 transition-all cursor-default shrink-0 relative group overflow-hidden" 
+                        <div class="u-sidebar-agent-item w-12 h-12 p-0.5 bg-white/3 border ${isProcessing ? 'border-primary shadow-[0_0_15px_rgba(0,255,204,0.3)]' : 'border-white/10'} rounded-xs hover:border-primary/40 transition-all cursor-default shrink-0 relative group overflow-hidden" 
                              data-code="${agent.code}" data-title="${agent.name}">
                              
                              <!-- Neural Scan Line (Active) -->
@@ -73,4 +79,3 @@ export function renderSidebar(workingAgents: Agent[], currentTopology: 'linear' 
         </div>
     `;
 }
-

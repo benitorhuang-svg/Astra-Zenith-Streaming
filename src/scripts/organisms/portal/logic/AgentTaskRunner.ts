@@ -1,16 +1,20 @@
-import { PortalContext, DIRTY_CONTENT } from '../../az_portal';
+import { 
+    PortalContext, DIRTY_CONTENT, PortalExecutionTask 
+} from '../PortalTypes';
 import { createAgentPath, buildAgentEvent } from '../../../core/agents';
 import { estimateApproximateTokens } from '../../../core/utils';
 import type { MissionMessage, PipelineContext } from '../../../core/types';
 import type { Agent } from '../../../core/agents';
 import { composeMiddlewares, withAuditLog, withRetry, withTokenGuard, withTurnTracking } from '../../../core/middleware';
-import type { PortalExecutionTask } from '../PortalTypes';
 
+/**
+ * AgentTaskRunner — The execution engine for individual agent tactical cycles.
+ */
 export class AgentTaskRunner {
     constructor(private context: PortalContext) {}
 
     public async execute(agentCode: string, round: number, shardingDirective: string, taskMetadata?: PortalExecutionTask): Promise<void> {
-        const agent: Agent | undefined = this.context.agentPool.find((a) => a.code === agentCode);
+        const agent: Agent | undefined = this.context.agentPool.find((a: any) => a.code === agentCode);
         if (!agent) return;
         
         const maxRetries = 3;
@@ -53,11 +57,11 @@ export class AgentTaskRunner {
         const performRequest = async (): Promise<void> => {
             const now = new Date();
             const currentTimestamp = `[LOCAL_TIME]: ${now.toLocaleDateString()} ${now.toLocaleTimeString()} UTC+8`;
-            const systemInstruction = `[DENSE_DISPLAY_PROTOCOL]: Minimize redundant line breaks/symbols. Focus on data throughput.`;
-
             let parentContext = '';
-            if (this.context.currentTopology === 'custom' && this.context.n8nFlow && taskMetadata?.nodeName) {
-                const parents = Object.entries(this.context.n8nFlow.connections)
+            // Note: n8nFlow is optional in context
+            const ctxAny = this.context as any;
+            if (this.context.currentTopology === 'custom' && ctxAny.n8nFlow && taskMetadata?.nodeName) {
+                const parents = Object.entries(ctxAny.n8nFlow.connections)
                     .filter(([, conn]) => (conn as any).main.some((batch: any) => batch.some((target: any) => target.node === taskMetadata.nodeName)))
                     .map(([source]) => source);
 
@@ -67,23 +71,74 @@ export class AgentTaskRunner {
                 }
             }
 
-            const apiMessages = [
+            const agentTacticalPrompt = (this.context as any)._p.agentPrompts[agentCode] || '';
+
+            // Optimization 2026.04: Strict Role Alternation & Part Consolidation
+            // Gemini API requires alternating 'user' and 'model' roles. 
+            // Consecutive messages of the same role must be merged into a single message with multiple parts.
+            
+            const rawContext = [
+                ...apiContextMessages.map(m => ({
+                    role: m.agentCode === 'USER' ? 'user' : 'model',
+                    text: m.content
+                })),
                 {
                     role: 'user',
-                    content: `${currentTimestamp}\n${systemInstruction}${parentContext}\n[URGENT_TACTICAL_COMMAND]: ${this.context.activePrompt}\n[YOUR_SPECIFIC_FOCUS]: ${shardingDirective}`
-                },
-                ...apiContextMessages.map(message => ({
-                    role: message.agentCode === 'USER' || message.agentCode === 'A1' ? 'user' : 'model',
-                    content: message.content
-                }))
+                    text: `${currentTimestamp}\n${parentContext}\n[URGENT_TACTICAL_COMMAND]: ${this.context.activePrompt}\n\n[YOUR_SPECIFIC_FOCUS]: ${shardingDirective}`
+                }
             ];
 
+            const consolidatedContents: any[] = [];
+            rawContext.forEach(msg => {
+                const last = consolidatedContents[consolidatedContents.length - 1];
+                if (last && last.role === msg.role) {
+                    last.parts.push({ text: msg.text });
+                } else {
+                    consolidatedContents.push({
+                        role: msg.role,
+                        parts: [{ text: msg.text }]
+                    });
+                }
+            });
+
+            // Final Guard: Gemini API requires the conversation to start with 'user'
+            if (consolidatedContents.length > 0 && consolidatedContents[0].role === 'model') {
+                consolidatedContents.unshift({ role: 'user', parts: [{ text: '[SYSTEM_RESUME_SYNC]' }] });
+            }
+
+            const apiMessages = consolidatedContents;
+
             let msgObj: MissionMessage | undefined = pipelineContext.messages.find(message => message.agentCode === agentCode && message.round === round && message.isStreaming);
+
+            const modelId = (this.context as any)._p.agentModels[agentCode] || (this.context.apiKey?.toLowerCase() === 'free' ? 'gemini-3.1-flash-lite-preview' : 'gemini-3.1-pro-preview');
 
             const response = await fetch('/api/generate-stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ agentId: agentCode, messages: apiMessages })
+                body: JSON.stringify({ 
+                    agentId: agentCode, 
+                    model: modelId, 
+                    system_instruction: {
+                        parts: [{ text: `${(this.context as any)._p.coreProtocol}\n\n[YOUR_TACTICAL_DATA_PERSONA]:\n${agentTacticalPrompt}` }]
+                    },
+                    contents: apiMessages,
+                    generationConfig: {
+                        temperature: 0.7,
+                        topP: 0.95,
+                        topK: 40,
+                        maxOutputTokens: 12000,
+                        responseMimeType: "text/plain",
+                        presencePenalty: 0.0,
+                        frequencyPenalty: 0.0,
+                        seed: 42
+                    },
+                        safetySettings: [
+                            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+                            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+                            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+                            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" }
+                        ]
+                })
             });
 
             if (!response.ok) throw new Error(`STATUS_${response.status}`);
@@ -120,7 +175,10 @@ export class AgentTaskRunner {
             withTurnTracking(this.context.pollingCycles),
             withRetry({ maxAttempts: maxRetries, baseDelayMs: 1000 })
         ], async () => {
-            this.context.messages = pipelineContext.messages;
+            this.context.messages = pipelineContext.messages.map(m => ({
+                ...m,
+                isStreaming: !!m.isStreaming // Force to boolean to match ChatMessage requirement
+            }));
             this.context._p.messages = this.context.messages;
             await performRequest();
         });

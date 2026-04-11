@@ -41,13 +41,13 @@ export class ContextCacheService {
             });
 
             this.caches.set(key, {
-                name: cache.name,
+                name: cache.name || '',
                 model,
                 expiresAt: Date.now() + 3600000
             });
 
             pushLog(`✅ [Cache] 快取建立完成: ${cache.name}`, 'success');
-            return cache.name;
+            return cache.name || '';
         } catch (e) {
             console.error('[CacheService] Failed to create cache:', e);
             return null;
@@ -61,7 +61,7 @@ export class ContextCacheService {
         const client = getAstraClient(GEMINI_API_KEY);
         for (const [, entry] of this.caches) {
             try {
-                await client.caches.delete(entry.name);
+                await client.caches.delete({ name: entry.name });
             } catch { /* noop */ }
         }
         this.caches.clear();

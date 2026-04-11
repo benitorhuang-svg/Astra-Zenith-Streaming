@@ -1,40 +1,40 @@
 # 🌌 Astra Zenith 模型架構與編排說明 (Model Orchestration Spec)
 
-本文檔詳細說明 Astra Zenith Portal 在 2026 年採組的 **「混合三模 (Mixed-Tri-Model)」** 指揮架構。
+本文檔詳細說明 Astra Zenith Portal 在 2026 年採組的 **「Multi-Agent Strategic Coordination (MASC)」** 指揮架構。
 
 ---
 
-## 🏗️ 核心模型資產庫 (Model Assets - 2026 Q2 Free Tier)
+## 🏗️ 核心模型資產庫 (Model Assets - 2026 Unified SDK)
 
-於 2026-04-01 後，Google 已正式將所有 **Pro** 模型轉入付費牆。本系統已全面過渡至最新的 **Flash** 與 **Flash-Lite** 指令系列，以維持 100% 免費層級運作。
+本系統已完全遷移至 **@google/genai (v1.x)** Unified SDK，並針對 2026 年最新模型艦隊進行了最佳化配置。
 
-### 1. ⚡ Gemini 3 Flash (Preview)
-*   **用途**：高端語義理解、戰略拆解、任務總結。
-*   **特性**：2026 最強免費旗艦，具備原生多模態及 1M Token 上下文。
-*   **模型 ID**：`gemini-3-flash-preview`
-*   **頻率限制 (Free Tier)**：
-    *   **RPM**: 15 (每分鐘要求數)
-    *   **RPD**: 1,500 (每日要求數)
-*   **分配代理**：A1 (Leader), A6 (System_Orchestrator)
+### 🛰️ 代理人艦隊分配 (Primary Agent Fleet)
 
-### 2. 🛡️ Gemini 3.1 Flash-Lite (Preview)
-*   **用途**：高吞吐量數據處理、分析、代碼編核。
-*   **特性**：專為併發環境優化，延遲極低。
-*   **模型 ID**：`gemini-3.1-flash-lite-preview`
-*   **頻率限制 (Free Tier)**：
-    *   **RPM**: 15 (每分鐘要求數)
-    *   **RPD**: 1,500 (每日要求數)
-*   **分配代理**：A2 (Analyzer), A3 (Codegen), A4 (Refiner), A5 (Evaluator)
+| ID | 角色 | 模型 (Free Tier) | 模型 (Paid Tier) | 核心職能 |
+|:---|:---|:---|:---|:---|
+| **A1** | Router | gemini-3-flash-preview | gemini-3-flash-preview | 意圖路由、任務分發、SDD 規格生成 |
+| **A2** | Coordinator | gemini-3.1-flash-lite-preview | gemini-3.1-pro-preview | 代理人同步、衝突調解、進度管理 |
+| **A3** | Researcher | gemini-2.5-flash-lite | gemini-3.1-flash-lite-preview | 地面檢索 (Google Search)、事實查核 |
+| **A4** | Analyst | gemini-3.1-flash-lite-preview | gemini-3.1-pro-preview | 深度推論、邏輯合成、技術分析 |
+| **A5** | Summarizer | gemini-2.5-flash-lite | gemini-3.1-flash-lite-preview | 上下文壓縮、戰略簡報、報告生成 |
+| **A6** | Guardrail | gemini-3-flash-preview | gemini-3-flash-preview | 輸出驗證、安全過濾、工業級合規檢查 |
 
-### 3. 🔥 Gemma 4 26B (MoE)
-*   **用途**：特定環境探測、本機端推理、高配額備援。
-*   **特性**：具備更高的高頻率容忍度 (30 RPM)。
-*   **分配代理**：可用於大規模任務時自動切換備援。
+### 🧬 技術標準 (Unified SDK Standards)
 
-### 4. 🎨 Imagen 4.0 Ultra
-*   **用途**：Infographic 戰略圖表生成。
-*   **模型 ID**：`imagen-4.0-ultra-generate-001`
-*   **限制**：25 RPD。
+1.  **統一通訊協議**：
+    *   **SDK**: `@google/genai` (取代舊版 `@google/generative-ai`)。
+    *   **API 版本**: `v1beta` (支持最新多模態與 Grounding 功能)。
+    *   **併發控制**: 透過 `externalApiGate` 實作 4 個並行執行槽，極大化提升響應速度。
+
+2.  **上下文優化 (Gemini Cookbook 模式)**：
+    *   **Context Caching**: 針對超過 4096 tokens 的「基礎任務規格 (Base Mission Spec)」進行跨回合持久化緩存。
+    *   **File API**: 多模態資源 (圖片/PDF) 透過 `client.files.upload` 上傳，通訊時僅引用 `fileUri`，節省 90% 頻寬。
+    *   **結構化歷史**: 採用 JSON 陣列形式傳遞對話歷史，提升模型對角色分配的專注度。
+
+3.  **韌性與備援機制**：
+    *   **一級備援**: `gemini-3.1-flash-lite-preview` (穩定 Worker)。
+    *   **高階備援**: `gemini-3.1-pro-preview` (付費層級推理)。
+    *   **開放模型備援**: `gemma-4-it` (適用於高頻次輕量化任務)。
 
 ---
 
@@ -42,25 +42,23 @@
 
 ```mermaid
 graph LR
-    User([任務下達]) --> A1[A1: Header\nGemini 3 Flash]
-    A1 -- 任務分發 --> Worker{併發執行區\nGemini 3.1 Lite}
-    Worker --> A2[A2: Analyzer]
-    Worker --> A3[A3: Codegen]
-    Worker --> A4[A4: Refiner]
-    Worker --> A5[A5: Evaluator]
-    A2 & A3 & A4 & A5 -- 原始日誌 --> A6[A6: Orchestrator\nGemini 3 Flash]
-    A6 -- 視覺需求 --> Img[Imagen 4.0 Ultra]
-    Img -- 數據視覺 --> A6
-    A6 --> UI([最終戰略簡報])
+    User([任務下達]) --> A1[A1: Router\nGemini 3 Flash]
+    A1 -- 意圖路由 --> Worker{並發執行區\n4 Slots}
+    Worker --> A2[A2: Coordinator]
+    Worker --> A3[A3: Researcher]
+    Worker --> A4[A4: Analyst]
+    A2 & A3 & A4 -- 分析日誌 --> A5[A5: Summarizer]
+    A5 -- 內容摘要 --> A6[A6: Guardrail]
+    A6 -- 安全掃描 --> UI([最終戰略簡報])
 ```
 
 ---
 
-## ⚠️ 關鍵配置提醒
+## 📊 效能指標 (Telemetry Targets)
 
-*   **API 協議**：系統必須使用 `v1beta` 版本以支持圖形合成指令。
-*   **配額保護**：在 Free Tier 下，併發代理建議維持在 3 個以內，以避免觸發 429 速率限制。
-*   **安全性**：所有模型均受 `v1beta` 安全過濾器保護，符合工業級合規標準。
+*   **目標 TTFT (首字時間)**: < 2.5s (得益於 Unified SDK 與並發優化)。
+*   **Token 壓縮率**: 透過對話剪裁與 Caching 達成 75% 以上節省。
+*   **併發上限**: Free Tier 15 RPM / Paid Tier 2000 RPM。
 
 ---
-*Last Updated: 2026-04-04 | Astra Zenith Strategic Matrix*
+*Last Updated: 2026-04-11 | Astra Zenith Strategic Matrix (v2.0)*

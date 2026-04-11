@@ -7,7 +7,7 @@
 import '../styles/input.css';
 
 // 1. Core Logic & Initialization
-import { initClock, initThemeToggle } from './core/utils';
+import { initThemeToggle } from './core/utils';
 
 // 2. Atoms
 import './atoms/brackets';
@@ -29,13 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('--- ASTRA_ZENITH_BOOTSTRAP_COMPLETE ---');
     
     // PWA Service Worker Registration
+    // [DEACTIVATED] Service Worker registration causing stale code issues
+    /*
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').catch(err => {
-                console.log('SW registration failed: ', err);
-            });
+             navigator.serviceWorker.register('/sw.js').catch(err => {
+                 console.log('SW registration failed: ', err);
+             });
         });
     }
+    */
 
     // Initialize Lucide Icons globally first
     if (window.lucide) {
@@ -43,6 +46,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initialize core system modules
-    initClock();
     initThemeToggle();
 });

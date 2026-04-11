@@ -33,18 +33,24 @@ export class MissionOrchestrator {
 
         try {
             const localKnowledge = getLocalKnowledgeContext();
-            let currentContext = `[SDD_MODIFIER: ${routingResult.sddModifier}]\n${topic}\n${localKnowledge}`;
+            const missionSpec = `[SDD_MODIFIER: ${routingResult.sddModifier}]\n主題：${topic}\n${localKnowledge}`;
+            const missionId = `mission-${Date.now()}`;
+
+            // Phase 5: Optimization — Cache the Base Mission Spec once for the entire session if in Paid Tier
+            let baseCacheName: string | undefined = undefined;
+            if (isPaidTier && GEMINI_API_KEY) {
+                baseCacheName = await this.handleContextCaching(missionSpec, agentIds[0], `${missionId}-base`);
+            }
+
+            // Structured conversation history
+            const history: StreamMessage[] = [
+                { role: 'user', content: `【任務背景與核心規格】\n${missionSpec}` }
+            ];
 
             for (let r = 0; r < numRounds; r++) {
                 if (numRounds > 1) {
                     pushLog(`🔄 執行第 ${r + 1} 輪探討 (SDD_CYCLE)...`, 'info');
                     res.write(`data: ${JSON.stringify({ round: r + 1, totalRounds: numRounds })}\n\n`);
-                }
-
-                // Phase 5: Explicit Caching for Paid Tier
-                let cachedContentName: string | undefined = undefined;
-                if (isPaidTier && GEMINI_API_KEY) {
-                    cachedContentName = await this.handleContextCaching(currentContext, agentIds[0]);
                 }
 
                 for (const agentId of agentIds) {
@@ -56,9 +62,8 @@ export class MissionOrchestrator {
 
                     const graphContext = await vectorService.getGraphContext(topic, 5);
                     const messages: StreamMessage[] = [
-                        { role: 'user', content: `【任務背景與核心規格】\n${currentContext}` },
-                        { role: 'user', content: `【當前圖譜關聯】\n${graphContext}` },
-                        { role: 'user', content: `請根據上述內容，進行分析或回應。` }
+                        ...history,
+                        { role: 'user', content: `【當前圖譜關聯】\n${graphContext}\n\n請根據上述討論與圖譜內容，進行深度分析或下一步回應。` }
                     ];
 
                     let fullReply = "";
@@ -66,7 +71,7 @@ export class MissionOrchestrator {
                         const cleanChunk = chunk.replace(/\*\*/g, '').replace(/--/g, '');
                         fullReply += cleanChunk;
                         res.write(`data: ${JSON.stringify({ agent: agentId, chunk: cleanChunk, round: r + 1 })}\n\n`);
-                    }, apiKey, cachedContentName);
+                    }, apiKey, baseCacheName);
 
                     // Auto-Vectorization
                     if (fullReply.length > 30) {
@@ -85,14 +90,26 @@ export class MissionOrchestrator {
                         this.recordTelemetry(result.usage, res);
                     }
                     
-                    currentContext += `\n\n[${agent.name}]: ${fullReply}`;
+                    // Add to structured history
+                    history.push({ role: 'model', content: fullReply });
+                    
+                    // Optimization: Context Pruning (Keep initial spec + last 8 turns)
+                    if (history.length > 10) {
+                        const spec = history[0];
+                        const recent = history.slice(-8);
+                        history.length = 0;
+                        history.push(spec, ...recent);
+                        pushLog(`✂️ [Context] 執行對話剪裁 (保留核心規格 + 最近 8 回合)`, 'warn');
+                    }
+                    
                     await this.applyDynamicDelay(agent.modelName);
                 }
             }
 
             // Post-flight Guardrail
             pushLog(`🛡️ [Harness] 正在執行輸出安全掃描...`, 'warn');
-            const secureContext = await pool.validateOutput(currentContext);
+            const finalContext = history.map(m => `[${m.role === 'model' ? 'AGENT' : 'SYSTEM'}]: ${m.content}`).join('\n\n');
+            const secureContext = await pool.validateOutput(finalContext);
 
             saveConversationToCore(topic, secureContext);
             vaultService.exportGraphToVault(topic);
@@ -106,14 +123,14 @@ export class MissionOrchestrator {
         }
     }
 
-    private async handleContextCaching(context: string, agentId: string) {
+    private async handleContextCaching(context: string, agentId: string, cacheKey: string) {
         try {
             const agentForCounting = pool.getAgent(agentId);
             const tokens = await agentForCounting?.countTokens(context) || 0;
-            
+
             if (tokens > 4096) {
                 return await contextCacheService.getOrCreateCache(
-                    `mission-${Date.now()}`, 
+                    cacheKey, 
                     agentForCounting?.modelName || 'gemini-3.1-flash-preview',
                     "You are an expert AI agent working in the Astra Zenith industrial environment.",
                     context

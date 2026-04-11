@@ -15,12 +15,12 @@ Astra Zenith Streaming 是一個基於 Gemini Multi-Agent 的工業級串流觀�
 ## Technical Context
 
 **Language/Version**: TypeScript 5.x
-**Primary Dependencies**: Vite 6, Tailwind CSS 4, Gemini API (@google/generative-ai)
+**Primary Dependencies**: Vite 6, Tailwind CSS 4, Gemini Unified SDK (@google/genai v1.48.0)
 **Storage**: `.az_core` (File-based), node:sqlite (Local Index)
 **Testing**: Vite built-in, Manual E2E via C2 HUD
 **Target Platform**: Modern Browser (PWA-ready), Node.js 20+ Server
 **Project Type**: Web Application (Frontend HUD + Backend Agent Engine)
-**Performance Goals**: TTFT < 3s, C2 HUD 60fps, Token compression 60%+
+**Performance Goals**: TTFT < 3s, C2 HUD 60fps, Token compression 70%+ (Context Caching)
 **Constraints**: Gemini Free Tier limits (15 RPM, 1500 RPD), Single-user MVP
 **Scale/Scope**: 6 Agents, ~50 UI components, 8 views
 
@@ -32,10 +32,10 @@ Astra Zenith Streaming 是一個基於 Gemini Multi-Agent 的工業級串流觀�
 |:---|:---|:---|
 | Atomic Design Architecture | ✅ Pass | `atoms/ → molecules/ → organisms/` 已實作 |
 | Single-Origin CSS | ✅ Pass | `input.css` → Tailwind v4 管線 |
-| Multi-Agent Streaming | ⚠️ Partial | SSE 串流已有，需加入 `path` 追蹤 |
-| Token Economy | ⚠️ Partial | 需實作 withTokenGuard 中間件 |
-| Security-First | ⚠️ Partial | 需加入 Zod 校驗與 VFS 沙箱 |
-| Observable & Auditable | ✅ Pass | `.az_core` 已建立 |
+| Multi-Agent Streaming | ✅ Pass | 已整合 @google/genai 原生串流與並發管理 (4 slots) |
+| Token Economy | ✅ Pass | 已實作兩階段壓縮、Context Caching 與 File API 優化 |
+| Security-First | ✅ Pass | 已實作 Zod 校驗、VFS 沙箱與 API Gate 隔離 |
+| Observable & Auditable | ✅ Pass | `.az_core` 已建立，提供實時 Telemetry |
 
 ---
 

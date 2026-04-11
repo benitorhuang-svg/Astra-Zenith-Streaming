@@ -64,11 +64,13 @@ export class PersistentAgent {
                         const result = await client.models.generateContentStream({
                             model,
                             contents,
-                            systemInstruction: this.role,
                             config: {
-                                temperature: 0.7,
-                                topP: 0.95,
-                                maxOutputTokens: 4096,
+                                systemInstruction: this.role,
+                                generationConfig: {
+                                    temperature: 0.7,
+                                    topP: 0.95,
+                                    maxOutputTokens: 4096,
+                                },
                                 safetySettings: DEFAULT_SAFETY_SETTINGS,
                                 tools: this.tools,
                                 cachedContent: (messages as any).cachedContent
@@ -76,12 +78,12 @@ export class PersistentAgent {
                         });
 
                         for await (const chunk of result) {
-                            const text = typeof (chunk as any).text === 'function' ? (chunk as any).text() : (chunk as any).text;
-                            if (text) onChunk(text);
+                            if (chunk.text) onChunk(chunk.text);
                         }
 
-                        const response = await (result as any).response;
-                        const usage = response?.usageMetadata;
+                        // The final response details (usage) are typically in the last chunk or available through metadata
+                        // For simplicity in the unified SDK, we can take usage from the iterator if supported or access via result
+                        const usage = (result as any).usageMetadata;
                         
                         this.modelName = model;
                         return { usage };
@@ -130,16 +132,15 @@ export class PersistentAgent {
                 return await client.models.generateContent({
                     model,
                     contents: [{ role: 'user', parts: [{ text: content }] }],
-                    systemInstruction: systemPrompt || this.role,
                     config: {
+                        systemInstruction: systemPrompt || this.role,
                         safetySettings: DEFAULT_SAFETY_SETTINGS,
                         tools: this.tools
                     }
                 });
             });
 
-            const txt = typeof (result as any).text === 'function' ? (result as any).text() : (result as any).text;
-            return txt || "";
+            return result.text || "";
         } catch (e) {
             console.error(`[HARNESS_REASON_FAIL] ${this.id}:`, e);
             return "";
@@ -152,8 +153,8 @@ export class PersistentAgent {
                 return await client.models.generateContent({
                     model,
                     contents: [{ role: 'user', parts: [{ text: content }] }],
-                    systemInstruction: systemPrompt || this.role,
                     config: {
+                        systemInstruction: systemPrompt || this.role,
                         responseMimeType: 'application/json',
                         responseSchema: schema,
                         safetySettings: DEFAULT_SAFETY_SETTINGS,
@@ -162,8 +163,7 @@ export class PersistentAgent {
                 });
             });
 
-            const txt = typeof (result as any).text === 'function' ? (result as any).text() : (result as any).text;
-            return txt ? JSON.parse(txt) : null;
+            return result.text ? JSON.parse(result.text) : null;
         } catch (e) {
             console.error(`[HARNESS_STRUCT_FAIL] ${this.id}:`, e);
             return null;

@@ -33,8 +33,14 @@ export function renderAgentSeat(
         }
         else if (index === 4) { x = 1120; y = CY; }
         else { x = 0; y = -1000; }
-    } else if (topology === 'custom' && customPos) {
-        x = customPos[0]; y = customPos[1];
+    } else if (topology === 'custom') {
+        if (customPos) {
+            x = customPos[0]; y = customPos[1];
+        } else {
+            // Default position towards bottom-right for clean custom start
+            x = 200 + (index * 50); 
+            y = 250 + (index * 30);
+        }
     } else if (topology === 'linear') {
         x = 150 + (index * 200); y = 290;
     }
@@ -76,14 +82,28 @@ export function renderAgentSeat(
                      </div>
                 </div>
             ` : `
-                <!-- Strategic Gold Tactical Placeholder -->
-                <div class="u-seat-add u-seat-glow w-16 h-22 border border-[#FFD700]/30 border-dashed rounded-xs flex flex-col items-center justify-center text-[#FFD700]/60 hover:text-[#FFD700] transition-all cursor-pointer group/add bg-black/40 shadow-[0_0_20px_rgba(255,215,0,0.05)]">
-                    <div class="relative w-5 h-5 mb-2 opacity-80 group-hover/add:opacity-100 transition-opacity animate-pulse text-[#FFD700]">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <i data-lucide="plus" class="w-4 h-4"></i>
+                <!-- Industrial High-Fidelity Tactical Seat Frame -->
+                <div class="u-seat-add w-24 h-32 border border-primary/20 bg-white/5 backdrop-blur-xl rounded-sm flex flex-col items-center justify-center text-primary/40 hover:text-primary transition-all cursor-pointer group/add shadow-[0_0_30px_rgba(var(--primary-rgb),0.05)] relative overflow-hidden">
+                    <!-- Scanline Overlay -->
+                    <div class="absolute inset-0 bg-linear-to-b from-transparent via-primary/5 to-transparent h-4 animate-scanline pointer-events-none"></div>
+                    
+                    <div class="relative w-8 h-8 mb-3 opacity-60 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <i data-lucide="plus" class="w-6 h-6 stroke-[1.5]"></i>
+                    </div>
+                    
+                    <div class="flex flex-col items-center gap-1 group-hover:scale-110 transition-transform">
+                        <span class="text-[8px] font-mono font-black uppercase tracking-[0.3em]">${nodeName}</span>
+                        <div class="flex items-center gap-1 opacity-40">
+                             <div class="w-1 h-1 bg-primary rounded-full"></div>
+                             <span class="text-[6px] font-mono italic tracking-tighter uppercase whitespace-nowrap">SEAT_READY_READY</span>
                         </div>
                     </div>
-                    <span class="text-[6px] font-mono opacity-60 uppercase tracking-[0.4em] font-black group-hover/add:opacity-100 transition-opacity text-[#FFD700]">${nodeName}</span>
+
+                    <!-- Tactical Borders -->
+                    <div class="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary/40"></div>
+                    <div class="absolute top-0 right-0 w-2 h-2 border-t border-r border-primary/40"></div>
+                    <div class="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-primary/40"></div>
+                    <div class="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-primary/40"></div>
                 </div>
             `}
         </div>

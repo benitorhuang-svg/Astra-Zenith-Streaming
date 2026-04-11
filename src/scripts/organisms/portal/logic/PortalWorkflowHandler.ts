@@ -1,10 +1,15 @@
-import { PortalContext, DIRTY_ALL, DIRTY_SIDEBAR } from '../../az_portal';
+import { 
+    PortalContext, DIRTY_ALL, DIRTY_SIDEBAR, 
+    PortalWorkflowController 
+} from '../PortalTypes';
 import type { N8NWorkflow } from '../../../integrations/n8n/n8n_data_types';
-import type { PortalArchive, PortalWorkflowController } from '../PortalTypes';
 import { AgentTaskRunner } from './AgentTaskRunner';
 import { WorkflowVisualizer } from './WorkflowVisualizer';
 import { WorkflowFlowManager } from './WorkflowFlowManager';
 
+/**
+ * PortalWorkflowHandler — Orchestrates complex multi-agent flows and topological execution.
+ */
 export class AZPortalWorkflowHandler implements PortalWorkflowController {
     public n8nFlow: N8NWorkflow | null = null;
     private runner: AgentTaskRunner;
@@ -25,7 +30,7 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
         } catch {
             this.n8nFlow = this.flowManager.createInitialFlow();
         }
-        this.context.n8nFlow = this.n8nFlow!;
+        (this.context as any).n8nFlow = this.n8nFlow!;
     }
 
     public handleAddNode(): void {
@@ -35,10 +40,8 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
     }
 
     public addSuccessorNode(_fromNodeName: string): void {
-        // Implementation logic handled by flowManager helper if extended, 
-        // for now keeping the basic successor add here but optimized.
         if (!this.n8nFlow) return;
-        this.n8nFlow = this.flowManager.addNode(this.n8nFlow); // Simplified for this pass
+        this.n8nFlow = this.flowManager.addNode(this.n8nFlow); 
         this.context.scheduleRender(DIRTY_ALL);
     }
 
@@ -46,7 +49,7 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
         try {
             const flow = JSON.parse(json);
             this.n8nFlow = flow;
-            this.context.n8nFlow = flow;
+            (this.context as any).n8nFlow = flow;
             this.context.pushInternalLog('📥 成功載入外部工作流。', 'SUCCESS');
             this.context.scheduleRender(DIRTY_ALL);
         } catch (e) {
@@ -61,7 +64,7 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
         this.context.isStreaming = true;
         this.context.messages = [];
         
-        const activeArchive: PortalArchive = {
+        const activeArchive: any = {
             id: missionId,
             time: new Date().toLocaleTimeString(),
             mission: 'LIVE_TACTICAL_DATA',
@@ -102,10 +105,10 @@ export class AZPortalWorkflowHandler implements PortalWorkflowController {
 
     private buildExecutionQueue() {
         this.context.executionQueue = [];
-        if (this.context.currentTopology === 'custom' && this.n8nFlow) {
-            // BFS/Topology Logic implementation...
-            this.n8nFlow.nodes.forEach(node => {
-                const agentMatch = this.context.agentPool.find(a => node.name.includes(a.code) || node.type.includes(a.code));
+        const n8nFlow = (this.context as any).n8nFlow;
+        if (this.context.currentTopology === 'custom' && n8nFlow) {
+            n8nFlow.nodes.forEach((node: any) => {
+                const agentMatch = this.context.agentPool.find((a: any) => node.name.includes(a.code) || node.type.includes(a.code));
                 if (agentMatch) {
                     this.context.executionQueue.push({ 
                         agentCode: agentMatch.code, round: 1, 

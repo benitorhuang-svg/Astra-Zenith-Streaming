@@ -1,4 +1,4 @@
-import { PortalContext, DIRTY_ALL, DIRTY_CONTENT } from '../../az_portal';
+import { PortalContext, DIRTY_ALL, DIRTY_CONTENT } from '../PortalTypes';
 
 export class TacticalHandler {
     constructor(private context: PortalContext) {}
@@ -35,14 +35,31 @@ export class TacticalHandler {
         if (target.closest('#u-btn-cycle-up')) {
             if (this.context.pollingCycles < 5) { 
                 this.context.pollingCycles++; 
-                this.context.scheduleRender(DIRTY_CONTENT); 
+                this.context.scheduleRender(DIRTY_ALL); 
             }
             return true;
         }
         if (target.closest('#u-btn-cycle-down')) {
             if (this.context.pollingCycles > 1) { 
                 this.context.pollingCycles--; 
-                this.context.scheduleRender(DIRTY_CONTENT); 
+                this.context.scheduleRender(DIRTY_ALL); 
+            }
+            return true;
+        }
+
+        // Filters (Added missing logic from m_portal_hud)
+        const passAll = target.closest('.u-btn-pass-all');
+        if (passAll) {
+            this.context._p.filterRound = 'all';
+            this.context.scheduleRender(DIRTY_CONTENT);
+            return true;
+        }
+        const passRound = target.closest('.u-btn-pass-round');
+        if (passRound) {
+            const round = passRound.getAttribute('data-round');
+            if (round) {
+                this.context._p.filterRound = parseInt(round);
+                this.context.scheduleRender(DIRTY_CONTENT);
             }
             return true;
         }

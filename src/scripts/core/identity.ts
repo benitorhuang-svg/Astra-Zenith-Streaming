@@ -26,34 +26,38 @@ class IdentityManager {
         this.hydrate();
     }
 
-    private hydrate() {
-        try {
-            const saved = sessionStorage.getItem('AZ_IDENTITY');
-            if (saved) {
-                const data = JSON.parse(saved);
+    public hydrate(): void {
+        const stored = sessionStorage.getItem('AZ_IDENTITY');
+        if (stored) {
+            try {
+                const data = JSON.parse(stored);
                 this.state = {
                     ...this.state,
-                    userName: data.name || 'USER',
+                    userName: data.userName || 'USER',
                     apiKey: data.apiKey || '',
                     accessMode: data.accessMode || 'OFFLINE',
-                    billingTier: data.billingTier || 'OFFLINE'
+                    billingTier: data.billingTier || 'OFFLINE',
+                    avatarUrl: data.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=Astra'
                 };
-                console.log('[ASTRA] Identity Hydrated from SessionStorage');
+            } catch (e) {
+                console.error("Identity hydration failed", e);
             }
-        } catch { /* silent restore fail */ }
+        }
     }
 
-    public update(patch: Partial<IdentityState>): void {
-        this.state = { ...this.state, ...patch };
-        console.log('[ASTRA] Global Identity Updated:', this.state.userName);
-        
-        // Persist for recovery
+    public update(newState: Partial<IdentityState>): void {
+        this.state = { ...this.state, ...newState };
         sessionStorage.setItem('AZ_IDENTITY', JSON.stringify(this.state));
+        window.dispatchEvent(new CustomEvent('az-identity-update', { detail: this.state }));
+    }
 
-        // Dispatch global event for all components (Header, Portal, etc.)
-        window.dispatchEvent(new CustomEvent('az-identity-update', {
-            detail: this.state
-        }));
+    public logout(): void {
+        this.update({
+            apiKey: '',
+            accessMode: 'OFFLINE',
+            billingTier: 'OFFLINE'
+        });
+        window.dispatchEvent(new CustomEvent('az-logout'));
     }
 
     public get(): IdentityState {

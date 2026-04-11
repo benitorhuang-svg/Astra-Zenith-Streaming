@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import morgan from 'morgan';
 import helmet from 'helmet';
+import compression from 'compression';
 
 // Atomic Core & Routes
 import { PORT } from './core/config';
@@ -16,6 +17,7 @@ import { syncMultimodalKnowledge } from './services/CoreService';
 
 const app = express();
 
+app.use(compression());
 app.use(express.json());
 app.use(cors());
 app.use(helmet({

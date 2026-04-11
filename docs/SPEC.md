@@ -82,12 +82,12 @@
 
 ### Functional Requirements
 
-- **FR-001**: System MUST 支援 6 Agent (A1-A6) 的並行串流通訊
-- **FR-002**: System MUST 透過 SSE 協議向前端推送 Agent 事件
+- **FR-001**: System MUST 支援 6 Agent (A1-A6) 的並行串流通訊 (4 Concurrency Slots)
+- **FR-002**: System MUST 透過 SSE 協議向前端推送 Agent 事件，並支援傳輸層壓縮 (Gzip)
 - **FR-003**: System MUST 為每個 Agent Event 附加 `path: string[]` 路徑追蹤
-- **FR-004**: System MUST 實作 Gemini API 的 Circuit Breaker (429/503 自動重試)
-- **FR-005**: System MUST 實作兩階段上下文壓縮 (Pruning + Summarization)
-- **FR-006**: System MUST 在 C2 觀測站即時呈現 Agent 狀態、Token 消耗、API 延遲
+- **FR-004**: System MUST 實作 Gemini Unified SDK 的 Circuit Breaker 與自動重試
+- **FR-005**: System MUST 實作三段式上下文優化：Pruning + Context Caching + File API
+- **FR-006**: System MUST 在 C2 觀測站即時呈現 Agent 狀態、Token 消耗、API 延遲 (Telemetry)
 - **FR-007**: System MUST 支援 Agent 主題色切換 (Alpha/Beta/Delta)
 - **FR-008**: System MUST 透過 `.az_core` 持久化 Agent 狀態與記憶
 - **FR-009**: System MUST 支援 n8n Workflow 觸發與狀態追蹤
@@ -95,10 +95,10 @@
 
 ### Key Entities
 
-- **Agent**: 代理人實例 (A1-A6)，具備 identity、role、model assignment、status
-- **Mission**: 使用者任務，包含 prompt、assigned agents、status、result stream
-- **AgentEvent**: 串流事件，包含 path、type、payload、timestamp
-- **Session**: 對話 Session，包含 history、token count、compaction state
+- **Agent**: 代理人實例 (A1-A6)，採用 @google/genai 原生介面
+- **Mission**: 使用者任務，包含主題、代理序列、穩定 Session ID
+- **FileAsset**: 多模態資源，透過 File API 上傳並以 URI 引用
+- **AgentEvent**: 串流事件，包含 path、type、payload、usageMetadata
 
 ---
 
@@ -106,10 +106,10 @@
 
 ### Measurable Outcomes
 
-- **SC-001**: 使用者從發送指令到首個 Agent 回應 < 3 秒 (TTFT)
+- **SC-001**: 使用者從發送指令到首個 Agent 回應 < 2.5 秒 (TTFT)
 - **SC-002**: C2 觀測站 6 個模組同時渲染時維持 60fps
-- **SC-003**: 單次對話 Token 消耗透過壓縮機制減少 60%+
-- **SC-004**: Gemini API 429 錯誤時，自動重試成功率 > 95%
+- **SC-003**: 對話 Token 負載透過 Caching 與 Pruning 減少 70%+
+- **SC-004**: 多模態資源傳輸延遲透過 File API 降低 80% (相比 Base64)
 - **SC-005**: PWA Lighthouse 分數 > 90
 
 ---

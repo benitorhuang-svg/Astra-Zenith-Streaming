@@ -1,8 +1,11 @@
 import { initClock } from '../../core/utils';
-import type { IdentityState } from '../../core/identity';
+import { GlobalIdentity, type IdentityState } from '../../core/identity';
 
-console.log('AZHeader module loaded (v2)');
-
+/**
+ * ORGANISM: Tactical Header
+ * Orchestrates navigation, clock, and operator identity status.
+ * Robust Implementation: High-frequency reactive updates.
+ */
 export class AZHeader extends HTMLElement {
     connectedCallback(): void {
         this.render();
@@ -11,6 +14,7 @@ export class AZHeader extends HTMLElement {
     }
 
     private render(): void {
+        this.className = "h-16 w-full bg-[#050a10]/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 z-[2000] select-none relative";
         this.innerHTML = `
             <div class="flex flex-col gap-1">
                 <h1 class="text-base font-headline font-black uppercase tracking-[0.4em] text-white leading-none">ASTRA ZENITH</h1>
@@ -20,130 +24,116 @@ export class AZHeader extends HTMLElement {
                 </div>
             </div>
 
-            <!-- Global Action Console (Integrated) -->
-            <div class="flex items-center gap-3">
-                <button id="h-btn-chat" class="h-9 px-5 flex items-center justify-center gap-2.5 bg-primary/10 border border-primary/40 rounded-sm text-primary font-mono text-[11px] font-bold hover:bg-primary/20 hover:border-primary transition-all active:scale-95 group u-shadow-glow" title="開啟主題對話介面">
-                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                    <span class="tracking-widest">主題對話</span>
-                </button>
-
-                <button id="u-btn-download-archive" class="h-9 px-5 flex items-center justify-center gap-2.5 bg-white/5 border border-white/10 rounded-sm text-white/40 font-mono text-[11px] font-bold hover:bg-secondary/20 hover:border-secondary/50 hover:text-secondary transition-all active:scale-90 group" title="進入任務歸檔 (DATA VAULT)">
-                    <i data-lucide="archive" class="w-3.5 h-3.5 group-hover:scale-110 transition-transform"></i>
-                    <span class="tracking-widest">任務歸檔</span>
-                </button>
-
-                <button id="h-btn-realtime" class="h-9 px-5 flex items-center justify-center gap-2.5 bg-secondary/10 border border-secondary/30 rounded-sm text-secondary font-mono text-[11px] font-bold hover:bg-secondary/20 hover:border-secondary transition-all active:scale-95 u-shadow-glow" title="即時日誌監控 (SYSTEM_LOG)">
-                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
-                    <span class="tracking-widest capitalize">實時連線</span>
-                </button>
-
-                <button id="h-btn-pathway" class="h-9 px-5 flex items-center justify-center gap-2.5 bg-success/10 border border-success/40 rounded-sm text-success font-mono text-[11px] font-bold hover:bg-success/20 hover:border-success transition-all active:scale-95 group u-shadow-glow" title="路徑分析與心智導圖 (STRATEGIC_PATHWAY)">
-                    <i data-lucide="network" class="w-3.5 h-3.5"></i>
-                    <span class="tracking-widest capitalize">路徑分析</span>
-                </button>
-
-                <button id="h-btn-custom-flow" class="h-9 px-5 flex items-center justify-center gap-2.5 bg-primary/10 border border-primary/40 rounded-sm text-primary font-mono text-[11px] font-bold hover:bg-primary/20 hover:border-primary transition-all active:scale-95 group u-shadow-glow" title="自訂工作流 (NODE_WORKFLOW)">
-                    <i data-lucide="blocks" class="w-3.5 h-3.5"></i>
-                    <span class="tracking-widest capitalize">工作流自訂</span>
-                </button>
+            <!-- Dashboard Tabs -->
+            <div class="flex items-center gap-2">
+                <az-button id="h-btn-chat" variant="ghost" label="主題對話" icon="message-square" size="sm"></az-button>
+                <az-button id="h-btn-archive" variant="ghost" label="任務歸檔" icon="archive" size="sm"></az-button>
+                <az-button id="h-btn-realtime" variant="ghost" label="實時連線" icon="activity" size="sm"></az-button>
+                <az-button id="h-btn-pathway" variant="ghost" label="路徑分析" icon="git-branch" size="sm"></az-button>
+                <az-button id="h-btn-custom-flow" variant="ghost" label="工作流自訂" icon="layout" size="sm"></az-button>
             </div>
 
+            <!-- Separator -->
+            <div class="w-px h-4 bg-white/10 mx-2"></div>
+
             <!-- Operator Context -->
-            <button id="h-btn-profile" class="flex items-center gap-6 group bg-white/5 transition-colors cursor-pointer px-4 py-1.5 rounded-sm border border-white/20 hover:border-primary/50 shadow-[0_0_15px_rgba(255,255,255,0.05)]" title="點擊修改身分及 API 金鑰 (EDIT_PROFILE)">
-                <div class="flex flex-col items-end">
-                    <span id="u-operator-role" class="text-[9px] font-mono text-white/30 tracking-[0.2em] uppercase font-bold group-hover:text-primary transition-colors italic">OFFLINE</span>
-                    <div class="flex items-center gap-3">
-                        <span id="u-operator-name" class="text-xs font-mono text-white font-bold tracking-widest uppercase group-hover:text-primary transition-colors">USER</span>
+            <button id="h-btn-profile" 
+                    class="flex items-center gap-4 px-3 py-1.5 rounded-full hover:bg-white/5 active:scale-95 transition-all group border border-transparent hover:border-white/10 no-drag pointer-events-auto cursor-pointer"
+                    onclick="window.dispatchEvent(new CustomEvent('az-logout', { bubbles: true, composed: true }))">
+                <div class="flex flex-col items-end gap-0.5 pointer-events-none">
+                    <span id="u-operator-role" class="text-[7px] font-black uppercase tracking-[0.2em] transition-colors leading-none">OFFLINE</span>
+                    <div class="flex items-center gap-1.5">
+                         <span id="u-operator-name" class="text-[10px] font-mono text-white/90 font-black tracking-wider leading-none">USER</span>
                     </div>
                 </div>
-                <div id="u-operator-avatar-container">
-                    <az-avatar id="u-operator-avatar-header" url="" size="md"></az-avatar>
+                <div id="u-operator-avatar-container" class="relative pointer-events-none">
+                    <az-avatar id="u-operator-avatar-header" size="sm" url="https://api.dicebear.com/7.x/bottts/svg?seed=Astra" ring="primary"></az-avatar>
                 </div>
             </button>
         `;
-        window.lucide?.createIcons({ parent: this });
 
-        // Initialize with GlobalIdentity State
-        import('../../core/identity').then(({ GlobalIdentity }) => {
-            const current = GlobalIdentity.get();
-            this.updateWithIdentity(current);
+        this.updateWithIdentity(GlobalIdentity.get());
+    }
+
+    private bindEvents(): void {
+        this.addEventListener('click', (e) => {
+            const path = (e.composedPath() as HTMLElement[]) || [];
+            const find = (selector: string) => path.find(el => el.matches && el.matches(selector));
+            
+            if (find('#h-btn-chat')) window.dispatchEvent(new CustomEvent('az-toggle-chat'));
+            if (find('#h-btn-pathway')) window.dispatchEvent(new CustomEvent('az-toggle-pathway'));
+            if (find('#h-btn-archive')) window.dispatchEvent(new CustomEvent('az-toggle-archive'));
+            if (find('#h-btn-custom-flow')) window.dispatchEvent(new CustomEvent('az-toggle-custom-workflow'));
+            if (find('#h-btn-realtime')) window.dispatchEvent(new CustomEvent('az-toggle-logs'));
+            
+            // Note: Logout is handled by inline onclick for maximum stability
+        });
+
+        window.addEventListener('az-identity-update', (e: Event) => {
+            this.updateWithIdentity((e as CustomEvent<IdentityState>).detail);
+        });
+
+        window.addEventListener('az-view-updated', (e: Event) => {
+            this.updateActiveNav((e as CustomEvent<{ view: string }>).detail.view);
+        });
+        
+        // Listen for Global Logout to sync local identity state cleanly
+        window.addEventListener('az-logout', () => {
+            GlobalIdentity.logout();
         });
     }
 
     private updateWithIdentity(identity: IdentityState): void {
         const nameEl = this.querySelector('#u-operator-name');
-        const roleEl = this.querySelector('#u-operator-role') as HTMLElement;
-        const avatarEl = this.querySelector('#u-operator-avatar-header');
-        const chatBtnText = this.querySelector('#h-btn-chat span');
+        const roleEl = this.querySelector('#u-operator-role');
+        const avatarEl = this.querySelector('#u-operator-avatar-header') as any;
 
-        if (nameEl && identity.userName) nameEl.textContent = identity.userName;
-        if (avatarEl && identity.avatarUrl) avatarEl.setAttribute('url', identity.avatarUrl);
-        
-        if (chatBtnText) {
-            chatBtnText.textContent = (identity.accessMode === 'PREVIEW') ? '虛擬劇本' : '主題對話';
-        }
+        if (nameEl) nameEl.textContent = identity.userName || 'USER';
 
-        if (roleEl && identity.accessMode) {
+        if (roleEl) {
+            const isOffline = identity.accessMode === 'OFFLINE';
             const isPreview = identity.accessMode === 'PREVIEW';
             const tier = identity.billingTier || 'OFFLINE';
-            
-            let statusLabel = 'Preview';
-            let statusColor = 'text-warning';
 
-            if (!isPreview) {
-                if (tier === 'PRO') {
-                    statusLabel = 'API_Pro';
-                    statusColor = 'text-success';
-                } else {
-                    statusLabel = 'API_FREE';
-                    statusColor = 'text-primary';
-                }
+            if (isOffline) {
+                roleEl.innerHTML = 'OFFLINE';
+                roleEl.className = 'text-[10px] font-black uppercase tracking-[0.2em] leading-none text-white/30';
+            } else if (isPreview) {
+                roleEl.innerHTML = 'PREVIEW_MODE';
+                roleEl.className = 'text-[10px] font-black uppercase tracking-[0.2em] leading-none text-highlight shadow-[0_0_5px_var(--color-highlight)] font-mono italic font-black';
+            } else {
+                roleEl.innerHTML = `API_${tier}`;
+                roleEl.className = 'text-[10px] font-black uppercase tracking-[0.2em] leading-none text-primary shadow-[0_0_5px_var(--color-primary)] font-mono font-black italic';
             }
-            
-            roleEl.innerHTML = `<span class="${statusColor} font-black text-[9px] tracking-widest italic uppercase">${statusLabel}</span>`;
-            roleEl.className = 'flex flex-col items-end opacity-100 transition-all';
         }
-    }
 
-    private bindEvents(): void {
-        this.querySelector('#h-btn-custom-flow')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('az-toggle-custom-workflow')));
-        this.querySelector('#h-btn-pathway')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('az-toggle-pathway')));
-        this.querySelector('#h-btn-realtime')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('az-toggle-logs')));
-        this.querySelector('#h-btn-profile')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('az-logout')));
-        this.querySelector('#u-btn-download-archive')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('az-toggle-archive')));
-        this.querySelector('#h-btn-chat')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('az-toggle-chat')));
-
-        window.addEventListener('az-identity-update', (e: Event) => this.updateWithIdentity((e as CustomEvent<IdentityState>).detail));
-
-        window.addEventListener('az-view-updated', (e: Event) => this.updateActiveNav((e as CustomEvent<{ view: string }>).detail.view));
+        if (avatarEl && identity.avatarUrl) {
+            avatarEl.setAttribute('url', identity.avatarUrl);
+        }
     }
 
     private updateActiveNav(view: string): void {
         const navMap: Record<string, string> = {
             'chat': '#h-btn-chat',
-            'archive': '#u-btn-download-archive',
-            'logs': '#h-btn-realtime',
-            'config': '#h-btn-config',
             'decision-tree': '#h-btn-pathway',
-            'table': '#h-btn-custom-flow'
+            'archive': '#h-btn-archive',
+            'table': '#h-btn-custom-flow',
+            'logs': '#h-btn-realtime'
         };
 
         Object.values(navMap).forEach(selector => {
-            const btn = this.querySelector(selector) as HTMLElement;
-            if (btn) {
-                btn.classList.remove('bg-[#ff007f]/20', 'border-[#ff007f]', 'u-highlight-active', 'u-shadow-glow-pink');
-                btn.classList.add('bg-white/5');
-            }
+            const btn = this.querySelector(selector) as any;
+            if (btn) btn.setAttribute('variant', 'ghost');
         });
 
-        const activeSelector = navMap[view];
-        if (activeSelector) {
-            const btn = this.querySelector(activeSelector) as HTMLElement;
-            if (btn) {
-                btn.classList.remove('bg-white/5');
-                btn.classList.add('bg-[#ff007f]/20', 'border-[#ff007f]', 'u-highlight-active', 'u-shadow-glow-pink');
+        const activeId = navMap[view];
+        if (activeId) {
+            const activeBtn = this.querySelector(activeId) as any;
+            if (activeBtn) {
+                activeBtn.setAttribute('variant', 'highlight');
             }
         }
     }
 }
+
 customElements.define('az-header', AZHeader);

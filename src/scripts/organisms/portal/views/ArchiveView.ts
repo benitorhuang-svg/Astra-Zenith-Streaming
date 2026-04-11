@@ -3,7 +3,7 @@
  * Designed for 2026 Industrial Mission Archiving.
  */
 
-import type { PortalArchive, PortalMessage } from '../PortalTypes';
+import type { PortalArchive, ChatMessage } from '../PortalTypes';
 import { renderCommonHeader } from '../../../molecules/m_portal_content_header';
 import { renderCommonFooter } from '../../../molecules/m_portal_content_footer';
 
@@ -118,7 +118,7 @@ export const renderArchiveView = (archives: PortalArchive[] = [], selectedId: st
                                             </div>
 
                                             <div class="flex flex-col gap-10">
-                                                 ${(selectedArch.messages || []).map((msg: PortalMessage) => {
+                                                 ${(selectedArch.messages || []).map((msg: ChatMessage) => {
                                                      const cleanContent = (msg.content || '')
                                                          .replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1')
                                                          .replace(/[#*-]{3,}/g, '') 

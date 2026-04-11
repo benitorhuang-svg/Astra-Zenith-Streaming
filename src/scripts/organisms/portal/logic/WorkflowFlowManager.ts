@@ -1,6 +1,9 @@
-import { PortalContext } from '../../az_portal';
+import { PortalContext } from '../PortalTypes';
 import type { N8NNode, N8NWorkflow } from '../../../integrations/n8n/n8n_data_types';
 
+/**
+ * WorkflowFlowManager — Helper for managing topological N8N-style flow data.
+ */
 export class WorkflowFlowManager {
     constructor(private context: PortalContext) {}
 
