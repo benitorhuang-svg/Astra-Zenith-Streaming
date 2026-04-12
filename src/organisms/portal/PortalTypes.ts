@@ -128,6 +128,7 @@ export interface PortalContext {
     handleModeSwitch: (view: PortalView | 'welcome') => void;
     handleTopologySwitch: (type: PortalTopology) => void;
     _p: any;
+    filterRound: number | 'all';
     activeDrag?: any | null;
     serverMode?: string;
     n8nFlow?: any;

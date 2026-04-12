@@ -2,7 +2,7 @@ import { PortalContext, DIRTY_ALL } from '../PortalTypes';
 import { GlobalIdentity } from '../../../core/identity';
 
 /**
- * IdentityHandler — Atomic Auth Logic
+ * IdentityHandler — Atomic Auth Logic (Refactored)
  */
 export class IdentityHandler {
     constructor(private context: PortalContext) {}
@@ -11,18 +11,31 @@ export class IdentityHandler {
         const path = (e.composedPath() as HTMLElement[]) || [];
         const find = (selector: string) => path.find(el => el instanceof HTMLElement && el.matches(selector));
 
-        // --- FAQ Accordion Logic: Close others on open ---
+        if (this.handleFAQ(find)) return true;
+        if (this.handleBoards(find)) return true;
+        if (this.handleAvatar(find)) return true;
+        if (this.handlePasswordVisibility(find)) return true;
+
+        const previewBtn = find('#u-btn-preview-mode');
+        if (previewBtn) { this.handlePreviewMode(previewBtn as any); return true; }
+
+        const loginBtn = find('#u-btn-access-portal');
+        if (loginBtn) { this.handleLogin(loginBtn as any); return true; }
+
+        return false;
+    }
+
+    private handleFAQ(find: any): boolean {
         const faqSummary = find('summary');
         if (faqSummary && faqSummary.parentElement?.matches('details.group\\/faq')) {
             const currentDetails = faqSummary.parentElement as HTMLDetailsElement;
             const allDetails = document.querySelectorAll('details.group\\/faq');
-            allDetails.forEach(d => {
-                if (d !== currentDetails) d.removeAttribute('open');
-            });
-            // Let the default toggle behavior proceed
+            allDetails.forEach(d => { if (d !== currentDetails) d.removeAttribute('open'); });
         }
+        return false;
+    }
 
-        // --- Click Outside Boards ---
+    private handleBoards(find: any): boolean {
         const boardFaq = document.getElementById('u-faq-board');
         const boardAvatar = document.getElementById('u-avatar-selection-board');
         const isClickInFaq = find('#u-faq-board');
@@ -30,45 +43,29 @@ export class IdentityHandler {
         const isClickInTrigger = find('#u-btn-open-faq') || find('#u-btn-select-avatar') || find('#u-btn-close-faq-board') || find('#u-btn-close-avatar-board');
 
         if (!isClickInFaq && !isClickInAvatar && !isClickInTrigger) {
-            if (boardFaq && !boardFaq.classList.contains('hidden')) {
-                boardFaq.classList.add('hidden');
-                return true;
-            }
-            if (boardAvatar && !boardAvatar.classList.contains('hidden')) {
-                boardAvatar.classList.add('hidden');
-                return true;
-            }
+            if (boardFaq && !boardFaq.classList.contains('hidden')) { boardFaq.classList.add('hidden'); return true; }
+            if (boardAvatar && !boardAvatar.classList.contains('hidden')) { boardAvatar.classList.add('hidden'); return true; }
         }
 
-        // --- Boards (Avatar/FAQ) ---
         if (find('#u-btn-select-avatar')) {
             const board = document.getElementById('u-avatar-selection-board');
             if (board) board.classList.toggle('hidden');
-            if (board && !board.classList.contains('hidden')) {
-                document.getElementById('u-faq-board')?.classList.add('hidden');
-            }
+            if (board && !board.classList.contains('hidden')) document.getElementById('u-faq-board')?.classList.add('hidden');
             return true;
         }
         if (find('#u-btn-open-faq')) {
             const board = document.getElementById('u-faq-board');
             if (board) board.classList.toggle('hidden');
-            if (board && !board.classList.contains('hidden')) {
-                document.getElementById('u-avatar-selection-board')?.classList.add('hidden');
-            }
+            if (board && !board.classList.contains('hidden')) document.getElementById('u-avatar-selection-board')?.classList.add('hidden');
             return true;
         }
-        if (find('#u-btn-close-avatar-board')) {
-            document.getElementById('u-avatar-selection-board')?.classList.add('hidden');
-            return true;
-        }
-        if (find('#u-btn-close-faq-board')) {
-            document.getElementById('u-faq-board')?.classList.add('hidden');
-            return true;
-        }
+        if (find('#u-btn-close-avatar-board')) { document.getElementById('u-avatar-selection-board')?.classList.add('hidden'); return true; }
+        if (find('#u-btn-close-faq-board')) { document.getElementById('u-faq-board')?.classList.add('hidden'); return true; }
+        return false;
+    }
 
-        // --- Avatar Upload ---
-        const uploadBtn = find('#u-btn-upload-avatar');
-        if (uploadBtn) {
+    private handleAvatar(find: any): boolean {
+        if (find('#u-btn-upload-avatar')) {
             const input = document.getElementById('u-avatar-upload-input') as HTMLInputElement;
             if (input) {
                 input.click();
@@ -80,10 +77,7 @@ export class IdentityHandler {
                             const reader = new FileReader();
                             reader.onload = (re: any) => {
                                 const url = re.target.result;
-                                if (url) {
-                                    GlobalIdentity.update({ avatarUrl: url });
-                                    this.context.scheduleRender(DIRTY_ALL);
-                                }
+                                if (url) { GlobalIdentity.update({ avatarUrl: url }); this.context.scheduleRender(DIRTY_ALL); }
                             };
                             reader.readAsDataURL(file);
                         }
@@ -92,51 +86,28 @@ export class IdentityHandler {
             }
             return true;
         }
-
-        // --- Avatar Selection ---
         const avatarOpt = find('.u-avatar-option');
         if (avatarOpt) {
             const url = avatarOpt.getAttribute('data-url');
-            if (url) { 
-                GlobalIdentity.update({ avatarUrl: url }); 
-                this.context.scheduleRender(DIRTY_ALL); 
-            }
+            if (url) { GlobalIdentity.update({ avatarUrl: url }); this.context.scheduleRender(DIRTY_ALL); }
             return true;
         }
+        return false;
+    }
 
-        // --- Password Visibility (Localized Fix to prevent flashing) ---
+    private handlePasswordVisibility(find: any): boolean {
         if (find('#u-btn-toggle-password')) {
             const input = document.getElementById('u-id-key') as HTMLInputElement;
             const btn = document.getElementById('u-btn-toggle-password') as HTMLElement;
             if (input && btn) {
                 const win = window as any;
                 win._PASSWORD_VISIBLE = !win._PASSWORD_VISIBLE;
-                
-                // Direct DOM Mutation (Zero Flash)
                 input.type = win._PASSWORD_VISIBLE ? 'text' : 'password';
                 btn.innerHTML = `<i data-lucide="${win._PASSWORD_VISIBLE ? 'eye-off' : 'eye'}" class="w-4 h-4 pointer-events-none"></i>`;
-                
-                if ((window as any).lucide) {
-                    (window as any).lucide.createIcons({ parent: btn });
-                }
+                if ((window as any).lucide) (window as any).lucide.createIcons({ parent: btn });
             }
             return true;
         }
-
-        // --- Preview Mode ---
-        const previewBtn = find('#u-btn-preview-mode');
-        if (previewBtn) {
-            this.handlePreviewMode(previewBtn as any);
-            return true;
-        }
-
-        // --- Login ---
-        const loginBtn = find('#u-btn-access-portal');
-        if (loginBtn) {
-            this.handleLogin(loginBtn as any);
-            return true;
-        }
-
         return false;
     }
 
@@ -147,16 +118,8 @@ export class IdentityHandler {
         const userName = nameInput?.value.trim() || 'OPERATOR_X';
 
         if (apiKey.toLowerCase() === 'free') {
-            // 🚀 REAL_MODE ENTRY with Free Tier Strategy
             (window as any).ZENITH_PREVIEW_MODE = false; 
-            
-            GlobalIdentity.update({ 
-                apiKey: 'free', 
-                userName,
-                accessMode: 'API_ACCESS',
-                billingTier: 'FREE' 
-            });
-
+            GlobalIdentity.update({ apiKey: 'free', userName, accessMode: 'API_ACCESS', billingTier: 'FREE' });
             this.context.apiKey = 'free';
             this.context._p.serverAuthorized = true;
             this.context.handleModeSwitch('chat');
@@ -165,7 +128,6 @@ export class IdentityHandler {
 
         if (btn) btn.loading = true;
         this.context.setWelcomeError('');
-
         fetch('/api/auth/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -174,33 +136,17 @@ export class IdentityHandler {
             if (data.valid) {
                 this.context._p.serverAuthorized = true;
                 this.context.apiKey = apiKey;
-                
-                GlobalIdentity.update({ 
-                    apiKey, 
-                    userName,
-                    accessMode: 'API_ACCESS',
-                    billingTier: data.tier || 'FREE' 
-                });
-                
+                GlobalIdentity.update({ apiKey, userName, accessMode: 'API_ACCESS', billingTier: data.tier || 'FREE' });
                 this.context.handleModeSwitch('chat');
-            } else {
-                throw new Error(data.error || 'Access Denied: Invalid Mission Key');
-            }
-        }).catch(err => {
-            this.context.setWelcomeError(err.message || 'Authentication System Failure');
-        }).finally(() => {
-            if (btn) btn.loading = false;
-        });
+            } else throw new Error(data.error || 'Access Denied: Invalid Mission Key');
+        }).catch(err => this.context.setWelcomeError(err.message || 'Authentication System Failure'))
+        .finally(() => { if (btn) btn.loading = false; });
     }
 
     private handlePreviewMode(btn: any) {
         if (btn) btn.loading = true;
         this.context.setWelcomeError('');
-
-        // 🚀 ACTIVATE_TACTICAL_MOCKUP: Globally enable interception for AgentTaskRunner
         (window as any).ZENITH_PREVIEW_MODE = true;
-
-        // Step 1: Switch server to CLI mode (Mocking internal system)
         fetch('/api/auth/mode', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -208,24 +154,12 @@ export class IdentityHandler {
         }).then(res => {
             if (res.ok) {
                 const previewKey = `PREVIEW_${Date.now()}`;
-                
-                GlobalIdentity.update({ 
-                    apiKey: previewKey, 
-                    userName: 'OPERATOR',
-                    accessMode: 'PREVIEW',
-                    billingTier: 'FREE'
-                });
-
+                GlobalIdentity.update({ apiKey: previewKey, userName: 'OPERATOR', accessMode: 'PREVIEW', billingTier: 'FREE' });
                 this.context.apiKey = previewKey;
                 this.context._p.serverAuthorized = true;
                 this.context.handleModeSwitch('chat');
-            } else {
-                throw new Error('Preview Mode Protocol Rejected by System');
-            }
-        }).catch(err => {
-            this.context.setWelcomeError(err.message || 'Preview Mode Failed');
-        }).finally(() => {
-            if (btn) btn.loading = false;
-        });
+            } else throw new Error('Preview Mode Protocol Rejected by System');
+        }).catch(err => this.context.setWelcomeError(err.message || 'Preview Mode Failed'))
+        .finally(() => { if (btn) btn.loading = false; });
     }
 }

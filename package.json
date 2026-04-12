@@ -1,6 +1,7 @@
 {
   "name": "astra-zenith-streaming-standalone",
   "version": "1.0.0",
+  "type": "module",
   "description": "Standalone Astra Zenith Streaming System (UI + Server)",
   "main": "server/index.ts",
   "scripts": {

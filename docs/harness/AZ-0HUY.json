@@ -1,0 +1,11 @@
+{
+  "missionId": "AZ-0HUY",
+  "topic": "分析 Google Gemma 4 模型的技術優勢與邊緣計算場景",
+  "variables": {},
+  "facts": [],
+  "scaffold": [],
+  "metrics": {
+    "agentScores": {},
+    "totalConflicts": 0
+  }
+}

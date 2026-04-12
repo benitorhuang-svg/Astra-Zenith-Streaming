@@ -11,7 +11,7 @@
       {
         "source": "**",
         "run": {
-          "serviceId": "agent-apichat",
+          "serviceId": "astra-zenith-streaming",
           "region": "asia-east1"
         }
       }

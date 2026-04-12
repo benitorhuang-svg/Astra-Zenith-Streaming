@@ -3,13 +3,11 @@ import { PortalContext, DIRTY_ALL, DIRTY_CONTENT } from '../PortalTypes';
 export class TacticalHandler {
     constructor(private context: PortalContext) {}
 
-    public handle(target: HTMLElement): boolean {
+    public handle(e: Event, find: (selector: string) => HTMLElement | undefined): boolean {
         // Clear Mission
-        if (target.closest('#u-btn-clear-mission') || target.closest('#u-btn-clear-all')) {
+        if (find('#u-btn-clear-mission') || find('#u-btn-clear-all')) {
             this.context.messages = [];
-            this.context._p.messages = [];
             this.context.activePrompt = '';
-            this.context._p.activePrompt = '';
             this.context.currentPasses = 0;
             this.context.isStreaming = false;
             this.context.tableParticipants.fill(null);
@@ -25,27 +23,27 @@ export class TacticalHandler {
         }
 
         // Action (Play/Stop)
-        if (target.closest('#u-mission-action')) {
+        if (find('#u-mission-action')) {
             if (this.context.isStreaming) this.context.stopFlow();
             else this.runFlow();
             return true;
         }
 
         // Run Flow (Custom)
-        if (target.closest('#u-btn-run-flow')) {
+        if (find('#u-btn-run-flow')) {
             this.runFlow();
             return true;
         }
 
         // Cycles
-        if (target.closest('#u-btn-cycle-up')) {
+        if (find('#u-btn-cycle-up')) {
             if (this.context.pollingCycles < 5) { 
                 this.context.pollingCycles++; 
                 this.context.scheduleRender(DIRTY_ALL); 
             }
             return true;
         }
-        if (target.closest('#u-btn-cycle-down')) {
+        if (find('#u-btn-cycle-down')) {
             if (this.context.pollingCycles > 1) { 
                 this.context.pollingCycles--; 
                 this.context.scheduleRender(DIRTY_ALL); 
@@ -53,19 +51,32 @@ export class TacticalHandler {
             return true;
         }
 
-        // Filters (Added missing logic from m_portal_hud)
-        const passAll = target.closest('.u-btn-pass-all');
+        // Filters
+        const passAll = find('.u-btn-pass-all');
         if (passAll) {
-            this.context._p.filterRound = 'all';
-            this.context.scheduleRender(DIRTY_CONTENT);
+            console.log('[Tactical] Switching to ALL mode');
+            this.context.filterRound = 'all';
+            this.context.scheduleRender(DIRTY_CONTENT); // 🚀 SET_MASK
+            (this.context as any)._p.performRender();    // 🚀 IMMEDIATE_SYNC
+            setTimeout(() => {
+                const scrollEl = document.getElementById('u-chat-scroll');
+                if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+            }, 10);
             return true;
         }
-        const passRound = target.closest('.u-btn-pass-round');
+        const passRound = find('.u-btn-pass-round');
         if (passRound) {
-            const round = passRound.getAttribute('data-round');
-            if (round) {
-                this.context._p.filterRound = parseInt(round);
-                this.context.scheduleRender(DIRTY_CONTENT);
+            const roundStr = passRound.getAttribute('data-round');
+            if (roundStr) {
+                console.log(`[Tactical] Switching to Round: ${roundStr}`);
+                const roundNum = parseInt(roundStr);
+                this.context.filterRound = roundNum;
+                this.context.scheduleRender(DIRTY_CONTENT); // 🚀 SET_MASK
+                (this.context as any)._p.performRender();    // 🚀 IMMEDIATE_SYNC
+                setTimeout(() => {
+                    const scrollEl = document.getElementById('u-chat-scroll');
+                    if (scrollEl) scrollEl.scrollTop = 0;
+                }, 10);
             }
             return true;
         }

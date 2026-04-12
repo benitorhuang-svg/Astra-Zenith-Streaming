@@ -1,0 +1,11 @@
+{
+  "missionId": "AZ-2SPY",
+  "topic": "1",
+  "variables": {},
+  "facts": [],
+  "scaffold": [],
+  "metrics": {
+    "agentScores": {},
+    "totalConflicts": 0
+  }
+}

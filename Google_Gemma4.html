@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Google Gemma 4 模型家族選型指南 - 心智圖</title>
+    <!-- 引入 Tailwind CSS 以便快速設計樣式 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Markmap 所需的資源 -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
+
+
+    <style>
+      /* 確保全螢幕高度與漸層背景 */
+      body {
+        background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      /* 心智圖容器的樣式 */
+      .markmap-container {
+        flex: 1;
+        width: 100%;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow:
+          0 10px 25px -5px rgba(0, 0, 0, 0.1),
+          0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        margin: 0;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+      }
+      /* 將 SVG 撐滿容器 */
+      #markmap-svg {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body class="p-4 md:p-8">
+    <!-- 標題區域 -->
+    <div
+      class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4"
+    >
+      <div>
+        <h1
+          class="text-3xl font-extrabold text-slate-800 flex items-center gap-2"
+        >
+          <svg
+            class="w-8 h-8 text-blue-600"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"
+            />
+          </svg>
+          Google Gemma 4 模型家族
+        </h1>
+        <p class="text-slate-500 mt-1">技術選型與知識架構心智圖</p>
+      </div>
+      <div
+        class="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium border border-blue-100 shadow-sm"
+      >
+        💡 提示：支援拖曳平移、滾輪縮放、點擊節點展開/收合
+      </div>
+    </div>
+
+    <!-- 心智圖主體區域 -->
+    <div class="markmap-container">
+      <svg id="markmap-svg"></svg>
+    </div>
+
+    <script>
+      // 等待 DOM 加載完成
+      document.addEventListener("DOMContentLoaded", () => {
+        const { Markmap, loadCSS, loadJS } = window.markmap;
+        
+        // 取得 Markdown 內容
+        const markdown = `
+# Gemma 4 選型指南
+
+## 一、 架構設計 (Architecture)
+### 稠密架構 (Dense Model)
+- **代表模型**：31B
+- **運作**：全神經元啟動，提供極致細膩推論
+- **亮點**：導入「思考模式 (Thinking Mode)」大幅提升複雜推理
+
+### 專家混合架構 (MoE)
+- **代表模型**：26B-A4B
+- **運作**：動態路由機制，每次僅喚醒 40 億 (A4B) 參數
+- **優勢**：效能與 VRAM 成本完美平衡，Agent 框架絕佳引擎
+
+## 二、 模態處理能力 (Modality)
+### 視覺語言與影片理解
+- **涵蓋**：31B、26B 家族
+- **輸入**：圖片、文字，**支援最長 60 秒多幀影片分析**
+- **輸出**：純文字
+- **場景**：伺服器端複雜圖表分析、UI 轉 Code
+
+### 全方位多模態 (Any-to-Any)
+- **涵蓋**：E4B (8B)、E2B (5B) 家族
+- **技術**：特製 Conformer 架構
+- **特點**：額外**原生支援「音訊 (Audio) 輸入」**
+- **場景**：邊緣裝置直接處理感測器訊號 (免靠外掛轉文字)
+
+## 三、 部署規模與硬體 (Deployment)
+### 旗艦中樞級 (31B / 26B)
+- **環境**：企業級 GPU 伺服器 / 雲端叢集
+- **定位**：AI 團隊處理深度邏輯的「核心大腦」
+
+### 高效能邊緣級 (E4B)
+- **環境**：電競筆電 / 中小型地端伺服器
+- **定位**：工程師地端「氛圍開發」的最佳平衡點
+- **備註**：E 代表 **Effective (有效參數)**，採層間嵌入技術壓縮
+
+### 極致輕量級 (E2B)
+- **環境**：高階智慧型手機 / 樹莓派 / 嵌入式設備
+- **定位**：完全離線、確保隱私、反應極快的即時任務
+
+## 四、 訓練階段與應用 (Training)
+### 基礎模型 (Base)
+- **辨識**：名稱無 it 後綴
+- **特性**：具海量知識但不遵循對話邏輯
+- **用途**：RAG 知識庫建構、企業專屬資料微調 (Fine-tuning)
+
+### 指令微調版 (Instruction-tuned)
+- **辨識**：名稱結尾為 -it
+- **特性**：對齊人類偏好，**原生支援 Function Calling 與 JSON 輸出**
+- **用途**：開箱即用的對話機器人、驅動自動化 Workflow
+        `;
+
+        // 解析 Markdown 為數據結構
+        const { Transformer } = window.markmap;
+        const transformer = new Transformer();
+        const { root, features } = transformer.transform(markdown);
+        
+        // 取得樣式與腳本資源 (選用)
+        const { styles, scripts } = transformer.getAssets();
+        if (styles) loadCSS(styles);
+        if (scripts) loadJS(scripts);
+
+        // 初始化 Markmap
+        const svg = document.querySelector("#markmap-svg");
+        const mm = Markmap.create(svg, {
+          autoFit: true, // 自動調整大小以適應容器
+          padding: 20,
+        }, root);
+
+        // 監控視窗縮放
+        window.addEventListener('resize', () => {
+          mm.fit();
+        });
+        
+        // 初始狀態下再強力 fit 一次
+        setTimeout(() => mm.fit(), 500);
+      });
+    </script>
+  </body>
+</html>

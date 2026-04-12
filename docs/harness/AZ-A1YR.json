@@ -1,0 +1,11 @@
+{
+  "missionId": "AZ-A1YR",
+  "topic": "1",
+  "variables": {},
+  "facts": [],
+  "scaffold": [],
+  "metrics": {
+    "agentScores": {},
+    "totalConflicts": 0
+  }
+}
